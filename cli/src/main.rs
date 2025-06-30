@@ -41,7 +41,7 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let mut manager = sysexts_manager_lib::manager::new_with_root(Path::new("test"))?;
+    let mut manager = sysexts_manager_lib::manager::new()?;
     manager.load_config()?;
     manager.load_images()?;
 

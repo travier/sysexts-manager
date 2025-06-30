@@ -5,8 +5,8 @@ use std::fs::{self, remove_file, symlink_metadata};
 use std::os::unix::fs::symlink;
 use std::path::{Display, Path, PathBuf};
 
-use anyhow::{Result, anyhow};
-use log::{debug, error, info, trace};
+use anyhow::{anyhow, Context, Result};
+use log::{debug, error, info, trace, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
 use version_compare::{Cmp, compare};
@@ -88,18 +88,18 @@ impl Manager {
         for dir in CONFIGURATION_DIRECTORIES {
             let configdir = self.path.join(dir);
             debug!("Looking for configuration in: {}", configdir.display());
-            let files = fs::read_dir(&configdir)?;
+            let Ok(files) = fs::read_dir(&configdir) else {
+                debug!("No configuration found in: {}", configdir.display());
+                continue;
+            };
             for file in files {
                 let Ok(filename) = file else {
                     error!("Could not get filename from direntry");
                     continue;
                 };
-                let config = match Config::new(filename.path().as_path()) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        error!("Error reading configuration file: {}", e);
-                        continue;
-                    }
+                let Ok(config) = Config::new(filename.path().as_path()) else {
+                    error!("Error reading configuration file: {}", filename.path().display());
+                    continue;
                 };
                 debug!("Valid configuration file for sysext: {:?}", &config);
                 if self.configs.contains_key(&config.Name) {
@@ -114,6 +114,10 @@ impl Manager {
             .iter()
             .map(|(name, _config)| name.clone())
             .collect();
+
+        if sysexts.is_empty() {
+            return Err(anyhow!("No configuration found!"));
+        }
         info!("Loaded configuration for sysexts: {}", sysexts.join(", "));
         Ok(())
     }
