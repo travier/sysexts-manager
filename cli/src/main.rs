@@ -4,10 +4,6 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use log::{LevelFilter, debug, info, trace};
 
-mod manager;
-mod ostree;
-mod sysext;
-
 // sub commands:
 // status
 // update / sync?
@@ -45,7 +41,7 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let mut manager = manager::new_with_root(Path::new("test"))?;
+    let mut manager = sysexts_manager_lib::manager::new_with_root(Path::new("test"))?;
     manager.load_config()?;
     manager.load_images()?;
 

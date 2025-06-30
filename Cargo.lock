@@ -490,9 +490,18 @@ name = "sysexts-manager"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cap-std",
  "clap",
  "env_logger",
+ "log",
+ "sysexts-manager-lib",
+]
+
+[[package]]
+name = "sysexts-manager-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cap-std",
  "log",
  "os-release",
  "serde",

@@ -1,0 +1,15 @@
+[package]
+description = "sysext-manager command line interface"
+name = "sysexts-manager"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/travier/sysexts-manager"
+default-run = "sysexts-manager"
+
+[dependencies]
+sysexts-manager-lib = { version = "0.1.0", path = "../lib" }
+anyhow = "1.0.97"
+clap = { version = "4.5.35", features = ["derive"] }
+env_logger = "0.11.8"
+log = "0.4.27"
