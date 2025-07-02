@@ -1,14 +1,6 @@
-use std::path::Path;
-
 use anyhow::Result;
-use clap::{Parser, Subcommand};
-use log::{LevelFilter, debug, info, trace};
-
-// sub commands:
-// status
-// update / sync?
-// track / add
-// untrack // remove
+use clap::{Parser, Subcommand, Args};
+use log::{LevelFilter};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
@@ -25,6 +17,25 @@ struct Cli {
 enum Command {
     /// Setup sysexts symlinks in /run/extensions
     Symlinks {},
+    /// Add configuration for a sysext
+    Add {
+        /// Name of the sysext
+        name: String,
+        /// Base URL where the sysext and its SHAS256SUMS file are hosted
+        url: String,
+        /// Override any existing configuration file
+        #[arg(short, long, default_value_t = false)]
+        force: bool,
+    },
+    /// Remove configuration and images for a sysext
+    Remove {
+        /// Name of the sysext
+        name: String,
+    },
+    // Download
+    // Clean
+    // Update
+    // Status
 }
 
 fn main() -> Result<()> {
@@ -52,5 +63,7 @@ fn main() -> Result<()> {
 
     match &cli.command {
         Command::Symlinks {} => manager.enable(),
+        Command::Add { name, url, force } => manager.add_sysext(name, "latest".into(), url, force),
+        Command::Remove { name} => manager.remove_sysext(name),
     }
 }

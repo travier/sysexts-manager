@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fmt;
-use std::fs::{self, remove_file, symlink_metadata};
+use std::fs::{self, remove_file, symlink_metadata, File};
 use std::os::unix::fs::symlink;
 use std::path::{Display, Path, PathBuf};
+use std::io::prelude::*;
 
 use anyhow::{anyhow, Context, Result};
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
 use version_compare::{Cmp, compare};
@@ -34,7 +35,7 @@ pub struct Manager {
     system: System,
     configs: HashMap<String, Config>,
     images: HashMap<String, Vec<Image>>,
-    path: PathBuf,
+    rootdir: PathBuf,
 }
 
 struct System {
@@ -47,6 +48,9 @@ const CONFIGURATION_DIRECTORIES: &'static [&'static str] = &[
     "etc/sysext-manager",
     "usr/lib/sysext-manager",
 ];
+
+const DEFAULT_CONFIG_DIR: &'static str = "etc/sysext-manager";
+const DEFAULT_STORE: &'static str = "var/lib/extensions.d";
 
 #[allow(dead_code)]
 pub fn new() -> Result<Manager> {
@@ -79,17 +83,17 @@ pub fn new_with_root(path: &Path) -> Result<Manager> {
         system: System { arch, version_id },
         configs: HashMap::new(),
         images: HashMap::new(),
-        path: path.into(),
+        rootdir: path.into(),
     })
 }
 
 impl Manager {
     pub fn load_config(&mut self) -> Result<()> {
         for dir in CONFIGURATION_DIRECTORIES {
-            let configdir = self.path.join(dir);
+            let configdir = self.rootdir.join(dir);
             debug!("Looking for configuration in: {}", configdir.display());
             let Ok(files) = fs::read_dir(&configdir) else {
-                debug!("No configuration found in: {}", configdir.display());
+                debug!("Could not find configuration directory: {}", configdir.display());
                 continue;
             };
             for file in files {
@@ -116,16 +120,20 @@ impl Manager {
             .collect();
 
         if sysexts.is_empty() {
-            return Err(anyhow!("No configuration found!"));
+            info!("No configuration found");
+        } else {
+            info!("Loaded configuration for sysexts: {}", sysexts.join(", "));
         }
-        info!("Loaded configuration for sysexts: {}", sysexts.join(", "));
         Ok(())
     }
 
     pub fn load_images(&mut self) -> Result<()> {
-        let sysext_store = self.path.join("var/lib/extensions.d");
+        let sysext_store = self.rootdir.join(DEFAULT_STORE);
         debug!("Looking for sysext images in: {}", sysext_store.display());
-        let files = fs::read_dir(&sysext_store)?;
+        let Ok(files) = fs::read_dir(&sysext_store) else {
+            debug!("Could not find sysext directory: {}", sysext_store.display());
+            return Ok(());
+        };
         for file in files {
             let Ok(filename) = file else {
                 error!("Could not get filename from direntry");
@@ -193,12 +201,16 @@ impl Manager {
                 )
             })
             .collect();
-        info!("Loaded versions for sysexts: {}", sysexts.join(", "));
+        if sysexts.is_empty() {
+            info!("No sysext loaded");
+        } else {
+            info!("Loaded versions for sysexts: {}", sysexts.join(", "));
+        }
         Ok(())
     }
 
     pub fn enable(&self) -> Result<()> {
-        let run_extensions = self.path.join("run/extensions");
+        let run_extensions = self.rootdir.join("run/extensions");
 
         let mut images = Vec::new();
 
@@ -251,6 +263,10 @@ impl Manager {
             .map(|image| format!("{} ({})", image.name, image.version))
             .collect::<Vec<String>>()
             .join(", ");
+        if enable.is_empty(){
+            info!("No sysexts to enable");
+            return  Ok(());
+        }
         info!("Enabling sysexts: {}", enable);
 
         for image in images {
@@ -265,6 +281,71 @@ impl Manager {
             symlink(original, link)?;
         }
 
+        Ok(())
+    }
+
+    pub fn add_sysext(&self, name: &str, kind: &str, url: &str, force: &bool) -> Result<()> {
+        debug!("Adding sysext config: {}, {}, {} (override: {})", name, kind, url, force);
+
+        let conf = Config {Name: name.into(), Kind: kind.into(), Url: url.into()};
+
+        let configdir = self.rootdir.join(DEFAULT_CONFIG_DIR);
+        if !configdir.exists() {
+            debug!("Creating {}", &configdir.display());
+            fs::create_dir(&configdir)?;
+        }
+        if !fs::metadata(&configdir)?.is_dir() {
+            return Err(anyhow!("{} is not a directory", &configdir.display()));
+        }
+
+        let conffile = configdir.join(format!("{}.conf", name));
+        if conffile.exists() && !*force {
+            return Err(anyhow!("{} already exists (use --force to override it)", conffile.display()));
+        }
+
+        let mut file = File::create(conffile)?;
+        file.write_all(&toml::to_string(&conf)?.into_bytes())?;
+
+        // TODO: Add config to manager
+
+        return Ok(());
+    }
+
+    pub fn remove_sysext(&mut self, name: &str) -> Result<()>{
+        debug!("Removing sysext config and images: {}", name);
+
+        let conffile = match self.configs.get(name) {
+            None => {
+                info!("No configuration found for: {}", name);
+                return Ok(());
+            }
+            Some(_c) => {
+                let configdir = self.rootdir.join(DEFAULT_CONFIG_DIR);
+                configdir.join(format!("{}.conf", name))
+            }
+        };
+        self.configs.remove(name);
+
+        match self.images.get(name) {
+            None => {
+                debug!("No images to remove");
+            },
+            Some(v) => {
+                let images = v.iter()
+                    .filter(|i| { i.name == name })
+                    .map(|i| i.path())
+                    .collect::<Vec<String>>();
+                let sysext_store = self.rootdir.join(DEFAULT_STORE);
+                for image in images {
+                    let path = sysext_store.join(image);
+                    info!("Removing: {}", path.display());
+                    remove_file(&path)?
+                }
+            },
+        };
+
+        info!("Removing: {}", conffile.display());
+        remove_file(&conffile)?;
         Ok(())
     }
 }

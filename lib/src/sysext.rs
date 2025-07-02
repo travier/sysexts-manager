@@ -2,13 +2,13 @@ use std::path::Path;
 use std::{ffi::OsString, fs};
 
 use anyhow::{Result, anyhow};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use toml;
 use version_compare::Version;
 
 use super::manager::Architecture;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[allow(non_snake_case, dead_code)]
 pub struct Config {
     pub Name: String,
