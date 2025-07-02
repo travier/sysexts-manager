@@ -360,7 +360,7 @@ impl Manager {
 
     fn update_sysext(&self, config: &Config, images: &Vec<Image>) -> Result<()> {
         debug!(
-            "Downloading: {} (version_id: {}, arch: {})",
+            "Downloading SHA256SUMS for: {} (version_id: {}, arch: {})",
             config.Name, self.system.version_id, self.system.arch
         );
 
@@ -395,7 +395,16 @@ impl Manager {
             };
             hashes.push((hash, image));
         }
-        println!("{:?}", hashes);
+        let parsed_sha256sums = hashes
+            .iter()
+            .map(|(h, i)| format!("{} ({})", i.path(), h))
+            .collect::<Vec<String>>()
+            .join("\n");
+        if parsed_sha256sums.is_empty() {
+            warn!("Empty SHA256SUMS file for: {}", config.Name);
+            return Ok(());
+        }
+        debug!("Found potential sysexts:\n{parsed_sha256sums}");
 
         // Look for latest remote image
         let mut latest_remote = None;
@@ -480,7 +489,7 @@ impl Manager {
             }
             Some(img) => {
                 debug!(
-                    "Comparing latest local & remote image for sysext: {} local: {} remote: {}",
+                    "Comparing latest local & remote image for sysext '{}': local: '{}' remote: '{}'",
                     img.name, img.version, remote_image.version
                 );
                 match compare(&img.version, &remote_image.version) {
@@ -489,15 +498,21 @@ impl Manager {
                         (remote_hash, remote_image)
                     }
                     Ok(Cmp::Eq) => {
-                        info!("No update found");
+                        info!("No update found for '{}'", img.name);
                         // TODO check hash
                         return Ok(());
                     }
                     Ok(Cmp::Gt) => {
-                        debug!("Local image is newer: {}", img.version);
+                        debug!("Local image is newer for '{}': {}", img.name, img.version);
                         return Ok(());
                     }
-                    _ => return Err(anyhow!("Invalid version number")),
+                    _ => {
+                        return Err(anyhow!(
+                            "Invalid version number: {} or {}",
+                            img.version,
+                            remote_image.version
+                        ));
+                    }
                 }
             }
         };
