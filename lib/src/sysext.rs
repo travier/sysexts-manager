@@ -61,14 +61,14 @@ impl Image {
             for _ in 0.."-x86-64".len() {
                 filename.pop();
             }
-        } else if filename.ends_with("-aarch64") {
-            for _ in 0.."-aarch64".len() {
+        } else if filename.ends_with("-arm64") {
+            for _ in 0.."-arm64".len() {
                 filename.pop();
             }
             arch = Architecture::aarch64;
         } else {
             return Err(anyhow!(
-                "sysext image name must be either for x86-64 or aarch64: {}",
+                "sysext image name must be either for x86-64 or arm64: {}",
                 filename
             ));
         }
@@ -109,7 +109,7 @@ impl Image {
     pub fn path(&self) -> String {
         let arch = match self.architecture {
             Architecture::x86_64 => "x86-64".to_string(),
-            Architecture::aarch64 => "aarch64".to_string(),
+            Architecture::aarch64 => "arm64".to_string(),
         };
         format!(
             "{}-{}-{}-{}.raw",

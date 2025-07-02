@@ -1,6 +1,6 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand, Args};
-use log::{LevelFilter};
+use clap::{Args, Parser, Subcommand};
+use log::LevelFilter;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
@@ -32,10 +32,17 @@ enum Command {
         /// Name of the sysext
         name: String,
     },
-    // Download
+    /// Update all configured sysexts
+    Update {},
+    // Download {
+    //     /// Name of the sysext
+    //     name: String,
+    //     /// Override operating system VERSION_ID
+    //     version_id: Option<String>,
+    // }
     // Clean
-    // Update
     // Status
+    // Refresh
 }
 
 fn main() -> Result<()> {
@@ -64,6 +71,8 @@ fn main() -> Result<()> {
     match &cli.command {
         Command::Symlinks {} => manager.enable(),
         Command::Add { name, url, force } => manager.add_sysext(name, "latest".into(), url, force),
-        Command::Remove { name} => manager.remove_sysext(name),
+        Command::Remove { name } => manager.remove_sysext(name),
+        Command::Update {} => manager.update(),
+        // Command::Download { name, version_id } => manager.download(name, version_id),
     }
 }

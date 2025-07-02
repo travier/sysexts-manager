@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fmt;
-use std::fs::{self, remove_file, symlink_metadata, File};
+use std::fs::{self, File, remove_file, symlink_metadata};
+use std::io::BufReader;
+use std::io::prelude::*;
 use std::os::unix::fs::symlink;
 use std::path::{Display, Path, PathBuf};
-use std::io::prelude::*;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
+use hex;
 use log::{debug, error, info, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
+use sha2::{Digest, Sha256};
 use version_compare::{Cmp, compare};
 
 use super::sysext::{Config, Image};
@@ -93,7 +96,10 @@ impl Manager {
             let configdir = self.rootdir.join(dir);
             debug!("Looking for configuration in: {}", configdir.display());
             let Ok(files) = fs::read_dir(&configdir) else {
-                debug!("Could not find configuration directory: {}", configdir.display());
+                debug!(
+                    "Could not find configuration directory: {}",
+                    configdir.display()
+                );
                 continue;
             };
             for file in files {
@@ -102,7 +108,10 @@ impl Manager {
                     continue;
                 };
                 let Ok(config) = Config::new(filename.path().as_path()) else {
-                    error!("Error reading configuration file: {}", filename.path().display());
+                    error!(
+                        "Error reading configuration file: {}",
+                        filename.path().display()
+                    );
                     continue;
                 };
                 debug!("Valid configuration file for sysext: {:?}", &config);
@@ -131,7 +140,10 @@ impl Manager {
         let sysext_store = self.rootdir.join(DEFAULT_STORE);
         debug!("Looking for sysext images in: {}", sysext_store.display());
         let Ok(files) = fs::read_dir(&sysext_store) else {
-            debug!("Could not find sysext directory: {}", sysext_store.display());
+            debug!(
+                "Could not find sysext directory: {}",
+                sysext_store.display()
+            );
             return Ok(());
         };
         for file in files {
@@ -150,20 +162,6 @@ impl Manager {
                         error!("Invalid sysext name: {}", filename.path().display());
                         break;
                     };
-                    if image.architecture != self.system.arch {
-                        error!(
-                            "Incompatible architecture for sysext: {}. Ignoring",
-                            filename.path().display()
-                        );
-                        break;
-                    }
-                    if image.version_id != self.system.version_id {
-                        error!(
-                            "Incompatible release for sysext: {}. Ignoring",
-                            filename.path().display()
-                        );
-                        break;
-                    }
                     match self.images.get_mut(&image.name) {
                         None => {
                             debug!("Adding sysext image to new list: {:?}", image);
@@ -228,6 +226,15 @@ impl Manager {
 
             let mut latest = None;
             for image in sysexts {
+                // Filter images that we can not use
+                if image.architecture != self.system.arch {
+                    info!("Ignoring '{}' (incompatible architecture)", image.path());
+                    continue;
+                }
+                if image.version_id != self.system.version_id {
+                    info!("Ignoring '{}' (incompatible release)", image.path());
+                    continue;
+                }
                 match &latest {
                     None => {
                         latest = Some(image.clone());
@@ -242,7 +249,7 @@ impl Manager {
                             debug!("{}: Selecting {}", name, image.version);
                             latest = Some(image.clone());
                         }
-                        _ => panic!("Invalid version number"),
+                        _ => return Err(anyhow!("Invalid version number")),
                     },
                 };
             }
@@ -263,9 +270,9 @@ impl Manager {
             .map(|image| format!("{} ({})", image.name, image.version))
             .collect::<Vec<String>>()
             .join(", ");
-        if enable.is_empty(){
+        if enable.is_empty() {
             info!("No sysexts to enable");
-            return  Ok(());
+            return Ok(());
         }
         info!("Enabling sysexts: {}", enable);
 
@@ -285,9 +292,16 @@ impl Manager {
     }
 
     pub fn add_sysext(&self, name: &str, kind: &str, url: &str, force: &bool) -> Result<()> {
-        debug!("Adding sysext config: {}, {}, {} (override: {})", name, kind, url, force);
+        debug!(
+            "Adding sysext config: {}, {}, {} (override: {})",
+            name, kind, url, force
+        );
 
-        let conf = Config {Name: name.into(), Kind: kind.into(), Url: url.into()};
+        let conf = Config {
+            Name: name.into(),
+            Kind: kind.into(),
+            Url: url.into(),
+        };
 
         let configdir = self.rootdir.join(DEFAULT_CONFIG_DIR);
         if !configdir.exists() {
@@ -300,7 +314,10 @@ impl Manager {
 
         let conffile = configdir.join(format!("{}.conf", name));
         if conffile.exists() && !*force {
-            return Err(anyhow!("{} already exists (use --force to override it)", conffile.display()));
+            return Err(anyhow!(
+                "{} already exists (use --force to override it)",
+                conffile.display()
+            ));
         }
 
         let mut file = File::create(conffile)?;
@@ -311,7 +328,7 @@ impl Manager {
         return Ok(());
     }
 
-    pub fn remove_sysext(&mut self, name: &str) -> Result<()>{
+    pub fn remove_sysext(&mut self, name: &str) -> Result<()> {
         debug!("Removing sysext config and images: {}", name);
 
         let conffile = match self.configs.get(name) {
@@ -329,10 +346,11 @@ impl Manager {
         match self.images.get(name) {
             None => {
                 debug!("No images to remove");
-            },
+            }
             Some(v) => {
-                let images = v.iter()
-                    .filter(|i| { i.name == name })
+                let images = v
+                    .iter()
+                    .filter(|i| i.name == name)
                     .map(|i| i.path())
                     .collect::<Vec<String>>();
                 let sysext_store = self.rootdir.join(DEFAULT_STORE);
@@ -341,11 +359,216 @@ impl Manager {
                     info!("Removing: {}", path.display());
                     remove_file(&path)?
                 }
-            },
+            }
         };
 
         info!("Removing: {}", conffile.display());
         remove_file(&conffile)?;
+        Ok(())
+    }
+
+    fn update_sysext(&self, config: &Config, images: &Vec<Image>) -> Result<()> {
+        debug!(
+            "Downloading: {} (version_id: {}, arch: {})",
+            config.Name, self.system.version_id, self.system.arch
+        );
+
+        // info!("curl --location --silent --output ... {}/SHA256SUMS", config.Url);
+        let client = reqwest::blocking::Client::new();
+        let sha256sums = client
+            .get(format!("{}/SHA256SUMS", config.Url))
+            .send()?
+            .text()?;
+        // println!("{}", sha256sums.to_string());
+
+        let mut hashes: Vec<(String, Image)> = Vec::new();
+        for line in sha256sums.lines() {
+            let mut split = line.split("  ");
+            let hash: String = match split.next() {
+                Some(s) => s.into(),
+                None => {
+                    error!("Invalid line in SHA256SUMS file: {}", line);
+                    continue;
+                }
+            };
+            let filename: String = match split.next() {
+                Some(s) => s.into(),
+                None => {
+                    error!("Invalid line in SHA256SUMS file: {}", line);
+                    continue;
+                }
+            };
+            let Ok(image) = Image::new(&config.Name, filename.clone().into()) else {
+                error!("Invalid sysext name: {}", filename);
+                continue;
+            };
+            hashes.push((hash, image));
+        }
+        println!("{:?}", hashes);
+
+        // Look for latest remote image
+        let mut latest_remote = None;
+        for (hash, image) in hashes {
+            // Filter images that we can not use
+            if image.architecture != self.system.arch {
+                debug!("Ignoring '{}' (incompatible architecture)", image.path());
+                continue;
+            }
+            if image.version_id != self.system.version_id {
+                debug!("Ignoring '{}' (incompatible release)", image.path());
+                continue;
+            }
+            match &latest_remote {
+                None => {
+                    latest_remote = Some((hash, image.clone()));
+                }
+                Some((h, i)) => match compare(&image.version, &i.version) {
+                    Ok(Cmp::Lt) => debug!("{}: Skipping {}", config.Name, image.version),
+                    Ok(Cmp::Eq) => error!(
+                        "{}: Should never happen: {} = {}",
+                        config.Name, image.version, i.version
+                    ),
+                    Ok(Cmp::Gt) => {
+                        debug!("{}: Selecting {}", config.Name, image.version);
+                        latest_remote = Some((hash, image.clone()));
+                    }
+                    _ => panic!("Invalid version number"),
+                },
+            };
+        }
+        let (remote_hash, remote_image) = match latest_remote {
+            None => {
+                error!("No remote valid image found for sysext: {}", config.Name);
+                return Ok(());
+            }
+            Some((h, i)) => {
+                debug!(
+                    "Found latest remote image for sysext: {} {}",
+                    i.name, i.version
+                );
+                (h, i)
+            }
+        };
+
+        let mut latest_local = None;
+        for image in images {
+            // Filter images that we can not use
+            if image.architecture != self.system.arch {
+                debug!("Ignoring '{}' (incompatible architecture)", image.path());
+                continue;
+            }
+            if image.version_id != self.system.version_id {
+                debug!("Ignoring '{}' (incompatible release)", image.path());
+                continue;
+            }
+            match &latest_local {
+                None => {
+                    latest_local = Some(image.clone());
+                }
+                Some(l) => match compare(&image.version, &l.version) {
+                    Ok(Cmp::Lt) => debug!("{}: Skipping {}", config.Name, image.version),
+                    Ok(Cmp::Eq) => error!(
+                        "{}: Should never happen: {} = {}",
+                        config.Name, image.version, l.version
+                    ),
+                    Ok(Cmp::Gt) => {
+                        debug!("{}: Selecting {}", config.Name, image.version);
+                        latest_local = Some(image.clone());
+                    }
+                    _ => return Err(anyhow!("Invalid version number")),
+                },
+            };
+        }
+        let (download_hash, download_image) = match latest_local {
+            None => {
+                info!(
+                    "No local image for sysext: {}. Downloading: {}",
+                    config.Name, remote_image.version
+                );
+                (remote_hash, remote_image)
+            }
+            Some(img) => {
+                debug!(
+                    "Comparing latest local & remote image for sysext: {} local: {} remote: {}",
+                    img.name, img.version, remote_image.version
+                );
+                match compare(&img.version, &remote_image.version) {
+                    Ok(Cmp::Lt) => {
+                        info!("Downloading: {}", remote_image.version);
+                        (remote_hash, remote_image)
+                    }
+                    Ok(Cmp::Eq) => {
+                        info!("No update found");
+                        // TODO check hash
+                        return Ok(());
+                    }
+                    Ok(Cmp::Gt) => {
+                        debug!("Local image is newer: {}", img.version);
+                        return Ok(());
+                    }
+                    _ => return Err(anyhow!("Invalid version number")),
+                }
+            }
+        };
+
+        // info!("curl --location --silent --output ... {}/{}", config.Url, download_image.path());
+        // Find latest version that matches version_id
+        // Check if we already have it and check its SHA256SUM again
+        // Download if needed via systemd-run command call to curl
+        debug!("Downloading: {}/{}", config.Url, download_image.path());
+        let sysext_body = client
+            .get(format!("{}/{}", config.Url, download_image.path()))
+            .send()?
+            .bytes()?;
+
+        // TODO: Compute that progressively while downloading
+        let mut hasher = Sha256::new();
+        hasher.update(&sysext_body);
+        let result = hex::encode(hasher.finalize());
+
+        if result != download_hash {
+            return Err(anyhow!(
+                "Invalid hash for {}: got {} vs expected {}",
+                download_image.path(),
+                result,
+                download_hash
+            ));
+        }
+        debug!("Valid hash for {} {}", download_image.path(), download_hash);
+
+        let sysext_store = self.rootdir.join(DEFAULT_STORE);
+        let sysextfile = sysext_store.join(format!("{}", download_image.path()));
+
+        // Write to a temp file and rename
+        let mut file = File::create(&sysextfile)?;
+        file.write_all(&sysext_body)?;
+
+        info!("Downloaded: {}", sysextfile.display());
+
+        // TODO: Add image to manager
+
+        Ok(())
+    }
+
+    pub fn update(&self) -> Result<()> {
+        info!("Updating all sysexts");
+
+        let sysext_store = self.rootdir.join(DEFAULT_STORE);
+        if !sysext_store.exists() {
+            debug!("Creating {}", &sysext_store.display());
+            fs::create_dir(&sysext_store)?;
+        }
+        if !fs::metadata(&sysext_store)?.is_dir() {
+            return Err(anyhow!("{} is not a directory", &sysext_store.display()));
+        }
+
+        let empty: Vec<Image> = vec![];
+        for (n, c) in &self.configs {
+            let images = self.images.get(n).unwrap_or(&empty);
+            self.update_sysext(c, images)?;
+        }
+
+        info!("Update completed");
         Ok(())
     }
 }
