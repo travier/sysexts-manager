@@ -2,6 +2,44 @@
 
 Work in progress manager for systemd system extensions (sysexts).
 
+## How to use
+
+TODO: Installing it from the pre-built sysext:
+
+```
+$ sudo install -d -m 0755 -o 0 -g 0 /var/lib/extensions
+$ curl --silent --fail --location ".../.raw" | sudo cat > /var/lib/extensions/sysexts-manager.raw
+$ sudo restorecon -RFv /var/lib/extensions
+$ sudo systemctl enable --now systemd-sysext.service
+```
+
+Installing the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
+
+```
+$ sudo sysext-manager add tree https://extensions.fcos.fr/extensions/tree
+$ sudo sysext-manager update
+$ sudo sysext-manager refresh // TODO
+```
+
+Listing all sysexts managed by sysexts-manager:
+
+```
+$ sudo sysext-manager status // TODO
+```
+
+Updating all sysexts managed by sysexts-manager:
+
+```
+$ sudo sysext-manager update
+```
+
+Removing the tree sysext and all installed images:
+
+```
+$ sudo sysext-manager remove tree
+$ sudo sysext-manager refresh // TODO
+```
+
 ## Why?
 
 Why do we need something else when we already have `systemd-sysupdate`?
@@ -33,10 +71,6 @@ See: [Current limitation of systemd-sysupdate](https://travier.github.io/fedora-
 In the future, this should be integrated into bootc directly (see
 [bootc#7](https://github.com/bootc-dev/bootc/issues/7)). In the meantime, we
 are prototyping the interface and usage here.
-
-## How to
-
-TODO
 
 ## License
 
