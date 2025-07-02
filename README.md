@@ -17,8 +17,23 @@ Installing the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr)
 
 ```
 $ sudo sysext-manager add tree https://extensions.fcos.fr/extensions/tree
+```
+
+Updating all sysexts with a configuration file:
+
+```
 $ sudo sysext-manager update
-$ sudo sysext-manager refresh // TODO
+```
+
+Creating temporary symlinks in `/run/extensions`:
+```
+$ sudo sysext-manager symlinks
+```
+
+Asking systemd to refresh enabled sysexts:
+
+```
+$ sudo sysext-manager refresh
 ```
 
 Listing all sysexts managed by sysexts-manager:

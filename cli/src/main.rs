@@ -1,6 +1,9 @@
-use anyhow::Result;
-use clap::{Args, Parser, Subcommand};
-use log::LevelFilter;
+use std::process;
+use std::result::Result::Ok;
+
+use anyhow::{Result, anyhow};
+use clap::{error, Args, Parser, Subcommand};
+use log::{debug, LevelFilter};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
@@ -34,6 +37,8 @@ enum Command {
     },
     /// Update all configured sysexts
     Update {},
+    /// Refresh loaded sysexts
+    Refresh {},
     // Download {
     //     /// Name of the sysext
     //     name: String,
@@ -43,6 +48,23 @@ enum Command {
     // Clean
     // Status
     // Refresh
+}
+
+fn refresh() -> Result<()> {
+    debug!("Asking systemd-sysusers to refresh enabled sysexts");
+    let mut cmd = process::Command::new("systemctl");
+    cmd.args(["restart", "systemd-sysext.service"]);
+    match cmd.status() {
+        Ok(s) => {
+            if !s.success() {
+                Err(anyhow!("Failed to refresh sysexts"))
+            } else {
+                debug!("sysexts successfully refreshed");
+                Ok(())
+            }
+        },
+        Err(e) => Err(anyhow!("Failed to refresh sysexts")),
+    }
 }
 
 fn main() -> Result<()> {
@@ -74,5 +96,6 @@ fn main() -> Result<()> {
         Command::Remove { name } => manager.remove_sysext(name),
         Command::Update {} => manager.update(),
         // Command::Download { name, version_id } => manager.download(name, version_id),
+        Command::Refresh {} => refresh(),
     }
 }

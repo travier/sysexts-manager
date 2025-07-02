@@ -206,6 +206,14 @@ impl Manager {
     pub fn enable(&self) -> Result<()> {
         let run_extensions = self.rootdir.join("run/extensions");
 
+        if !run_extensions.exists() {
+            debug!("Creating {}", &run_extensions.display());
+            fs::create_dir(&run_extensions)?;
+        }
+        if !fs::metadata(&run_extensions)?.is_dir() {
+            return Err(anyhow!("{} is not a directory", &run_extensions.display()));
+        }
+
         let mut images = Vec::new();
 
         for (name, config) in &self.configs {
