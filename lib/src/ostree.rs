@@ -38,7 +38,7 @@ pub struct Deployment {
 #[allow(dead_code)]
 pub fn rpm_ostree_status() -> Result<()> {
     let mut cmd = Command::new("rpm-ostree");
-    cmd.env("RPMOSTREE_CLIENT_ID", &"manager");
+    cmd.env("RPMOSTREE_CLIENT_ID", "manager");
 
     // Retry on temporary activation failures, see
     // https://github.com/coreos/rpm-ostree/issues/2531
@@ -47,7 +47,7 @@ pub fn rpm_ostree_status() -> Result<()> {
     let mut retries = 0;
     let cmd_res = loop {
         retries += 1;
-        let res = cmd.args(&["status", "--json"]).output()?;
+        let res = cmd.args(["status", "--json"]).output()?;
 
         if res.status.success() || retries >= max_retries {
             break res;

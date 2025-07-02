@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fmt;
 use std::fs::{self, File, remove_file, symlink_metadata};
-use std::io::BufReader;
+// use std::io::BufReader;
 use std::io::prelude::*;
 use std::os::unix::fs::symlink;
 use std::path::{Display, Path, PathBuf};
@@ -30,7 +30,7 @@ impl fmt::Display for Architecture {
             Architecture::x86_64 => "x86_64",
             Architecture::aarch64 => "aarch64",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -46,14 +46,14 @@ struct System {
     version_id: String,
 }
 
-const CONFIGURATION_DIRECTORIES: &'static [&'static str] = &[
+const CONFIGURATION_DIRECTORIES: &[&str] = &[
     "run/sysext-manager",
     "etc/sysext-manager",
     "usr/lib/sysext-manager",
 ];
 
-const DEFAULT_CONFIG_DIR: &'static str = "etc/sysext-manager";
-const DEFAULT_STORE: &'static str = "var/lib/extensions.d";
+const DEFAULT_CONFIG_DIR: &str = "etc/sysext-manager";
+const DEFAULT_STORE: &str = "var/lib/extensions.d";
 
 #[allow(dead_code)]
 pub fn new() -> Result<Manager> {
@@ -73,14 +73,14 @@ pub fn new_with_root(path: &Path) -> Result<Manager> {
         "x86_64" => Architecture::x86_64,
         "aarch64" => Architecture::aarch64,
         a => {
-            return Err(anyhow!("Architecture is not supported: {}", a));
+            return Err(anyhow!("Architecture is not supported: {a}"));
         }
     };
 
     let release = OsRelease::new()?;
     let version_id = release.version_id;
 
-    debug!("Found arch: {} | version_id: {}", arch, version_id);
+    debug!("Found arch: {arch} | version_id: {version_id}");
 
     Ok(Manager {
         system: System { arch, version_id },
@@ -122,11 +122,7 @@ impl Manager {
                 }
             }
         }
-        let sysexts: Vec<String> = self
-            .configs
-            .iter()
-            .map(|(name, _config)| name.clone())
-            .collect();
+        let sysexts: Vec<String> = self.configs.keys().cloned().collect();
 
         if sysexts.is_empty() {
             info!("No configuration found");
@@ -153,7 +149,7 @@ impl Manager {
             };
             debug!("Looking at sysext image: {}", filename.path().display());
             let mut found = false;
-            for (name, _configs) in &self.configs {
+            for name in self.configs.keys() {
                 let filename_osstr = filename.file_name();
                 let filename_str = filename_osstr.to_str().unwrap();
                 if filename_str.starts_with(name) {
@@ -164,13 +160,13 @@ impl Manager {
                     };
                     match self.images.get_mut(&image.name) {
                         None => {
-                            debug!("Adding sysext image to new list: {:?}", image);
+                            debug!("Adding sysext image to new list: {image:?}");
                             let name = image.name.clone();
                             let vec = vec![image];
                             self.images.insert(name, vec);
                         }
                         Some(v) => {
-                            debug!("Adding sysext image to existing list: {:?}", image);
+                            debug!("Adding sysext image to existing list: {image:?}");
                             v.push(image);
                         }
                     }
@@ -215,8 +211,7 @@ impl Manager {
         for (name, config) in &self.configs {
             let Some(sysexts) = self.images.get(name) else {
                 error!(
-                    "Config found for '{}' but no sysexts found. Not setting up. Do an update?",
-                    name
+                    "Config found for '{name}' but no sysexts found. Not setting up. Do an update?"
                 );
                 continue;
             };
@@ -255,7 +250,7 @@ impl Manager {
             }
             match latest {
                 None => {
-                    error!("No image to enable for sysext: {}", name);
+                    error!("No image to enable for sysext: {name}");
                     continue;
                 }
                 Some(img) => {
@@ -274,17 +269,16 @@ impl Manager {
             info!("No sysexts to enable");
             return Ok(());
         }
-        info!("Enabling sysexts: {}", enable);
+        info!("Enabling sysexts: {enable}");
 
         for image in images {
             // Setup symlinks in /run/extensions.version for the sysexts found
             let original = format!("../../var/lib/extensions.d/{}", image.path());
             let link = format!("{}/{}.raw", run_extensions.display(), image.name);
-            debug!("{} -> {}", link, original);
-            match symlink_metadata(&link) {
-                Ok(_) => remove_file(&link)?,
-                _ => {}
-            }
+            debug!("{link} -> {original}");
+            if symlink_metadata(&link).is_ok() {
+                remove_file(&link)?
+            };
             symlink(original, link)?;
         }
 
@@ -292,10 +286,7 @@ impl Manager {
     }
 
     pub fn add_sysext(&self, name: &str, kind: &str, url: &str, force: &bool) -> Result<()> {
-        debug!(
-            "Adding sysext config: {}, {}, {} (override: {})",
-            name, kind, url, force
-        );
+        debug!("Adding sysext config: {name}, {kind}, {url} (override: {force})");
 
         let conf = Config {
             Name: name.into(),
@@ -312,7 +303,7 @@ impl Manager {
             return Err(anyhow!("{} is not a directory", &configdir.display()));
         }
 
-        let conffile = configdir.join(format!("{}.conf", name));
+        let conffile = configdir.join(format!("{name}.conf"));
         if conffile.exists() && !*force {
             return Err(anyhow!(
                 "{} already exists (use --force to override it)",
@@ -325,20 +316,20 @@ impl Manager {
 
         // TODO: Add config to manager
 
-        return Ok(());
+        Ok(())
     }
 
     pub fn remove_sysext(&mut self, name: &str) -> Result<()> {
-        debug!("Removing sysext config and images: {}", name);
+        debug!("Removing sysext config and images: {name}");
 
         let conffile = match self.configs.get(name) {
             None => {
-                info!("No configuration found for: {}", name);
+                info!("No configuration found for: {name}");
                 return Ok(());
             }
             Some(_c) => {
                 let configdir = self.rootdir.join(DEFAULT_CONFIG_DIR);
-                configdir.join(format!("{}.conf", name))
+                configdir.join(format!("{name}.conf"))
             }
         };
         self.configs.remove(name);
@@ -387,19 +378,19 @@ impl Manager {
             let hash: String = match split.next() {
                 Some(s) => s.into(),
                 None => {
-                    error!("Invalid line in SHA256SUMS file: {}", line);
+                    error!("Invalid line in SHA256SUMS file: {line}");
                     continue;
                 }
             };
             let filename: String = match split.next() {
                 Some(s) => s.into(),
                 None => {
-                    error!("Invalid line in SHA256SUMS file: {}", line);
+                    error!("Invalid line in SHA256SUMS file: {line}");
                     continue;
                 }
             };
             let Ok(image) = Image::new(&config.Name, filename.clone().into()) else {
-                error!("Invalid sysext name: {}", filename);
+                error!("Invalid sysext name: {filename}");
                 continue;
             };
             hashes.push((hash, image));
@@ -422,7 +413,7 @@ impl Manager {
                 None => {
                     latest_remote = Some((hash, image.clone()));
                 }
-                Some((h, i)) => match compare(&image.version, &i.version) {
+                Some((_h, i)) => match compare(&image.version, &i.version) {
                     Ok(Cmp::Lt) => debug!("{}: Skipping {}", config.Name, image.version),
                     Ok(Cmp::Eq) => error!(
                         "{}: Should never happen: {} = {}",
@@ -537,7 +528,7 @@ impl Manager {
         debug!("Valid hash for {} {}", download_image.path(), download_hash);
 
         let sysext_store = self.rootdir.join(DEFAULT_STORE);
-        let sysextfile = sysext_store.join(format!("{}", download_image.path()));
+        let sysextfile = sysext_store.join(download_image.path());
 
         // Write to a temp file and rename
         let mut file = File::create(&sysextfile)?;

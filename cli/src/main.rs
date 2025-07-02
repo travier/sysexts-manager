@@ -70,7 +70,7 @@ fn main() -> Result<()> {
 
     match &cli.command {
         Command::Symlinks {} => manager.enable(),
-        Command::Add { name, url, force } => manager.add_sysext(name, "latest".into(), url, force),
+        Command::Add { name, url, force } => manager.add_sysext(name, "latest", url, force),
         Command::Remove { name } => manager.remove_sysext(name),
         Command::Update {} => manager.update(),
         // Command::Download { name, version_id } => manager.download(name, version_id),
