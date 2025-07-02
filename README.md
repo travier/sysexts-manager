@@ -39,7 +39,7 @@ $ sudo sysext-manager refresh
 Listing all sysexts managed by sysexts-manager:
 
 ```
-$ sudo sysext-manager status // TODO
+$ sudo sysext-manager status
 ```
 
 Updating all sysexts managed by sysexts-manager:
@@ -52,7 +52,7 @@ Removing the tree sysext and all installed images:
 
 ```
 $ sudo sysext-manager remove tree
-$ sudo sysext-manager refresh // TODO
+$ sudo sysext-manager refresh
 ```
 
 ## Why?

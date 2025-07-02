@@ -585,4 +585,20 @@ impl Manager {
         info!("Update completed");
         Ok(())
     }
+
+    pub fn status(&self) -> Result<()> {
+        println!("sysexts:");
+        for (n, c) in &self.configs {
+            println!("  {n} ({}, {}):", c.Kind, c.Url);
+            match self.images.get(n) {
+                None => println!("No images installed for that sysext"),
+                Some(images) => {
+                    for i in images {
+                        println!("    {}", i.path())
+                    }
+                }
+            };
+        }
+        Ok(())
+    }
 }

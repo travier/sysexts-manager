@@ -2,8 +2,8 @@ use std::process;
 use std::result::Result::Ok;
 
 use anyhow::{Result, anyhow};
-use clap::{error, Args, Parser, Subcommand};
-use log::{debug, LevelFilter};
+use clap::{Args, Parser, Subcommand, error};
+use log::{LevelFilter, debug};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
@@ -39,16 +39,16 @@ enum Command {
     Update {},
     /// Refresh loaded sysexts
     Refresh {},
-    // Download {
-    //     /// Name of the sysext
-    //     name: String,
-    //     /// Override operating system VERSION_ID
-    //     version_id: Option<String>,
-    // }
-    // Clean
-    // Status
-    // Refresh
+    /// Status of sysexts
+    Status {},
 }
+// Download {
+//     /// Name of the sysext
+//     name: String,
+//     /// Override operating system VERSION_ID
+//     version_id: Option<String>,
+// }
+// Clean
 
 fn refresh() -> Result<()> {
     debug!("Asking systemd-sysusers to refresh enabled sysexts");
@@ -62,7 +62,7 @@ fn refresh() -> Result<()> {
                 debug!("sysexts successfully refreshed");
                 Ok(())
             }
-        },
+        }
         Err(e) => Err(anyhow!("Failed to refresh sysexts")),
     }
 }
@@ -97,5 +97,6 @@ fn main() -> Result<()> {
         Command::Update {} => manager.update(),
         // Command::Download { name, version_id } => manager.download(name, version_id),
         Command::Refresh {} => refresh(),
+        Command::Status {} => manager.status(),
     }
 }
