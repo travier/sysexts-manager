@@ -47,12 +47,12 @@ struct System {
 }
 
 const CONFIGURATION_DIRECTORIES: &[&str] = &[
-    "run/sysext-manager",
-    "etc/sysext-manager",
-    "usr/lib/sysext-manager",
+    "run/sysexts-manager",
+    "etc/sysexts-manager",
+    "usr/lib/sysexts-manager",
 ];
 
-const DEFAULT_CONFIG_DIR: &str = "etc/sysext-manager";
+const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
 
 #[allow(dead_code)]
