@@ -62,13 +62,20 @@ $ sudo sysexts-manager remove tree
 $ sudo sysexts-manager refresh
 ```
 
+## How does this work on boot?
+
+We statically install a copy of the `sysexts-manager` sysext and enable
+`systemd-sysext.service` to run on boot. When systemd loads the
+`sysexts-manager` sysext on boot, it will trigger `sysexts-manager.service`
+which will enable and load all other sysexts on demand.
+
 ## Why?
 
 Why do we need something else when we already have `systemd-sysupdate`?
 
-While installing and updating via `systemd-sysupdate` *works* (as done with
-[extensions.fcos.fr](https://extensions.fcos.fr/)), it also comes with a few
-limitations:
+While installing and updating sysexts via `systemd-sysupdate` *works* (as done
+with [extensions.fcos.fr](https://extensions.fcos.fr/)), it also comes with a
+few limitations:
 - The commands to install, update and remove sysexts at
   [extensions.fcos.fr](https://extensions.fcos.fr/) are prone to errors and are
   not really user friendly.
