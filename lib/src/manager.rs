@@ -56,6 +56,8 @@ const MUTABLE_CONFIGURATION_DIRECTORIES: &[&str] = &["run/sysexts-manager", "etc
 
 const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
+// const DEFAULT_EXTENSIONS: &str = "var/lib/extensions";
+const RUNTIME_EXTENSIONS: &str = "run/extensions";
 
 #[allow(dead_code)]
 pub fn new() -> Result<Manager> {
@@ -206,7 +208,7 @@ impl Manager {
     }
 
     pub fn enable(&self) -> Result<()> {
-        let run_extensions = self.rootdir.join("run/extensions");
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
 
         if !run_extensions.exists() {
             debug!("Creating {}", &run_extensions.display());
@@ -342,6 +344,22 @@ impl Manager {
             Some(_c) => {}
         };
         self.configs.remove(name);
+
+        // Remove enablement symlink if it exists
+        let runtimedir = self.rootdir.join(RUNTIME_EXTENSIONS);
+        let imagelink = runtimedir.join(format!("{name}.raw"));
+        if imagelink.exists() {
+            info!("Removing symlink: {}", imagelink.display());
+            remove_file(&imagelink)?;
+        }
+
+        // Remove image or symlink from /var/lib/extensions if it exists
+        // let extensionsdir = self.rootdir.join(DEFAULT_EXTENSIONS);
+        // let imagelink = extensionsdir.join(format!("{name}.raw"));
+        // if imagelink.exists() {
+        //     info!("Removing image: {}", imagelink.display());
+        //     remove_file(&imagelink)?;
+        // }
 
         match self.images.get(name) {
             None => {
