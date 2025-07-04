@@ -1,1 +1,9 @@
 /target
+/sysexts-manager/*.raw
+/sysexts-manager/digest
+/sysexts-manager/inputs
+/sysexts-manager/rootfs
+/sysexts-manager/scripts
+/sysexts-manager/usr/bin
+/sysexts-manager/version
+/sysexts-manager/version_id

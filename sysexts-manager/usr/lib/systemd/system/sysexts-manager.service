@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup ephemeral sysexts symlinks with sysexts-manager
+ConditionPathExists=/var/lib/extensions.d
+# We start as early as possible, after systemd-sysext.service
+DefaultDependencies=no
+After=systemd-sysext.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/sysexts-manager symlinks
+ExecStart=/usr/bin/sysexts-manager refresh
