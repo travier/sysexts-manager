@@ -52,6 +52,8 @@ const CONFIGURATION_DIRECTORIES: &[&str] = &[
     "usr/lib/sysexts-manager",
 ];
 
+const MUTABLE_CONFIGURATION_DIRECTORIES: &[&str] = &["run/sysexts-manager", "etc/sysexts-manager"];
+
 const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
 
@@ -330,15 +332,12 @@ impl Manager {
     pub fn remove_sysext(&mut self, name: &str) -> Result<()> {
         debug!("Removing sysext config and images: {name}");
 
-        let conffile = match self.configs.get(name) {
+        match self.configs.get(name) {
             None => {
                 info!("No configuration found for: {name}");
                 return Ok(());
             }
-            Some(_c) => {
-                let configdir = self.rootdir.join(DEFAULT_CONFIG_DIR);
-                configdir.join(format!("{name}.conf"))
-            }
+            Some(_c) => {}
         };
         self.configs.remove(name);
 
@@ -361,8 +360,16 @@ impl Manager {
             }
         };
 
-        info!("Removing: {}", conffile.display());
-        remove_file(&conffile)?;
+        // Try removing the config from /run and /etc, ignore /usr
+        for dir in MUTABLE_CONFIGURATION_DIRECTORIES {
+            let configdir = self.rootdir.join(dir);
+            let conffile = configdir.join(format!("{name}.conf"));
+            if conffile.exists() {
+                info!("Removing: {}", conffile.display());
+                remove_file(&conffile)?;
+            }
+        }
+
         Ok(())
     }
 
