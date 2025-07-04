@@ -6,6 +6,7 @@ edition = "2024"
 license = "MIT"
 repository = "https://github.com/travier/sysexts-manager"
 default-run = "sysexts-manager"
+rust-version = "1.85.0"
 
 [dependencies]
 sysexts-manager-lib = { version = "0.1.0", path = "../lib" }
