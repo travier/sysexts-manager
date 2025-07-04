@@ -5,9 +5,9 @@ use std::fs::{self, File, remove_file, symlink_metadata};
 // use std::io::BufReader;
 use std::io::prelude::*;
 use std::os::unix::fs::symlink;
-use std::path::{Display, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 use hex;
 use log::{debug, error, info, warn};
 use os_release::OsRelease;
