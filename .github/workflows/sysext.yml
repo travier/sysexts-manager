@@ -24,17 +24,48 @@ concurrency:
 
 jobs:
   build-x86_64:
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     release: ['41', '42']
+    strategy:
+      fail-fast: false
+      matrix:
+        release: ['41', '42']
     runs-on: "ubuntu-24.04"
     container:
       image: "ghcr.io/travier/sysexts-manager/buildroot:latest"
       options: "--privileged --security-opt label=disable --user 0:0"
     env:
-      # IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
-      IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:42"
+      IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+
+      - name: "Mark directory as safe"
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+
+      - name: "Build sysexts-manager"
+        run: |
+          cargo build --release
+          mkdir -p sysexts-manager/usr/bin
+          cp target/release/sysexts-manager sysexts-manager/usr/bin/sysexts-manager
+
+      - name: "Build sysext: sysexts-manager"
+        uses: ./.github/actions/build
+        with:
+          sysext: 'sysexts-manager'
+          image: ${{ env.IMAGE }}
+
+  build-aarch64:
+    strategy:
+      fail-fast: false
+      matrix:
+        release: ['41', '42']
+    runs-on: "ubuntu-24.04-arm"
+    container:
+      image: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+      options: "--privileged --security-opt label=disable --user 0:0"
+    env:
+      IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
     steps:
       - name: "Checkout repo"
         uses: actions/checkout@v4
@@ -63,7 +94,7 @@ jobs:
     # Run after both arch builds
     needs:
       - build-x86_64
-      # - build-aarch64
+      - build-aarch64
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: "Checkout repo"
