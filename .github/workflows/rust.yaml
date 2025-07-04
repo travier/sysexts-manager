@@ -1,13 +1,14 @@
 # Inspired by https://github.com/coreos/repo-templates
-
-name: Rust
+name: "Rust"
 on:
   push:
-    branches: [main]
+    branches:
+      - "main"
   pull_request:
-    branches: [main]
+    branches:
+      - "main"
 permissions:
-  contents: read
+  contents: "read"
 
 # Don't waste job slots on superseded code
 concurrency:
@@ -21,82 +22,82 @@ env:
 
 jobs:
   tests-stable:
-    name: Tests, stable toolchain
+    name: "Tests, stable toolchain"
     runs-on: "ubuntu-24.04"
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: "Install toolchain"
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Cache build artifacts
+      - name: "Cache build artifacts"
         uses: Swatinem/rust-cache@v2
-      - name: cargo build
+      - name: "cargo build"
         run: cargo build --all-targets
-      - name: cargo test
+      - name: "cargo test"
         run: cargo test --all-targets
   tests-release-stable:
-    name: Tests (release), stable toolchain
+    name: "Tests (release), stable toolchain"
     runs-on: "ubuntu-24.04"
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: "Install toolchain"
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Cache build artifacts
+      - name: "Cache build artifacts"
         uses: Swatinem/rust-cache@v2
-      - name: cargo build (release)
+      - name: "cargo build (release)"
         run: cargo build --all-targets --release
-      - name: cargo test (release)
+      - name: "cargo test (release)"
         run: cargo test --all-targets --release
   tests-release-msrv:
-    name: Tests (release), minimum supported toolchain
+    name: "Tests (release), minimum supported toolchain"
     runs-on: "ubuntu-24.04"
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
-      - name: Detect crate MSRV
+      - name: "Detect crate MSRV"
         run: |
           msrv=$(cargo metadata --format-version 1 --no-deps | \
               jq -r '.packages[0].rust_version')
           echo "Crate MSRV: $msrv"
           echo "MSRV=$msrv" >> $GITHUB_ENV
-      - name: Install toolchain
+      - name: "Install toolchain"
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env.MSRV }}
-      - name: Cache build artifacts
+      - name: "Cache build artifacts"
         uses: Swatinem/rust-cache@v2
-      - name: cargo build (release)
+      - name: "cargo build (release)"
         run: cargo build --all-targets --release
-      - name: cargo test (release)
+      - name: "cargo test (release)"
         run: cargo test --all-targets --release
   linting:
-    name: Lints, pinned toolchain
+    name: "Lints, pinned toolchain"
     runs-on: "ubuntu-24.04"
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: "Install toolchain"
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env.ACTIONS_LINTS_TOOLCHAIN }}
           components: rustfmt, clippy
-      - name: Cache build artifacts
+      - name: "Cache build artifacts"
         uses: Swatinem/rust-cache@v2
-      - name: cargo fmt (check)
+      - name: "cargo fmt (check)"
         run: cargo fmt -- --check -l
-      - name: cargo clippy (warnings)
+      - name: "cargo clippy (warnings)"
         run: cargo clippy --all-targets -- -D warnings
   tests-other-channels:
-    name: Tests, unstable toolchain
+    name: "Tests, unstable toolchain"
     runs-on: "ubuntu-24.04"
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     continue-on-error: true
@@ -104,15 +105,15 @@ jobs:
       matrix:
         channel: [beta, nightly]
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: "Install toolchain"
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.channel }}
-      - name: Cache build artifacts
+      - name: "Cache build artifacts"
         uses: Swatinem/rust-cache@v2
-      - name: cargo build
+      - name: "cargo build"
         run: cargo build --all-targets
-      - name: cargo test
+      - name: "cargo test"
         run: cargo test --all-targets
