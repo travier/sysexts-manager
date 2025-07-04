@@ -4,55 +4,62 @@ Work in progress manager for systemd system extensions (sysexts).
 
 ## How to use
 
-TODO: Installing it from the pre-built sysext:
+Install the `sysexts-manager` pre-built sysext:
 
 ```
+$ VERSION="0.0.1" # sysexts-manager version
+$ VERSION_ID="42" # Fedora release
+$ ARCH="x86-64"   # or arm64
+$ URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
 $ sudo install -d -m 0755 -o 0 -g 0 /var/lib/extensions
-$ curl --silent --fail --location ".../.raw" | sudo cat > /var/lib/extensions/sysexts-manager.raw
+$ curl --silent --fail --location "${URL}/sysexts-manager-${VERSION}-${VERSION_ID}-${ARCH}.raw" \
+      | sudo bash -c "cat > /var/lib/extensions/sysexts-manager.raw"
 $ sudo restorecon -RFv /var/lib/extensions
-$ sudo systemctl enable --now systemd-sysext.service
+$ sudo systemctl enable systemd-sysext.service
+$ sudo systemctl restart systemd-sysext.service
 ```
 
-Installing the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
+As `sysexts-manager` is a sysext, it is capable of managing itself:
 
 ```
-$ sudo sysext-manager add tree https://extensions.fcos.fr/extensions/tree
+$ sysexts-manager status
 ```
 
-Updating all sysexts with a configuration file:
+Install the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
 
 ```
-$ sudo sysext-manager update
+$ sudo sysexts-manager add tree https://extensions.fcos.fr/extensions/tree
 ```
 
-Creating temporary symlinks in `/run/extensions`:
-```
-$ sudo sysext-manager symlinks
-```
-
-Asking systemd to refresh enabled sysexts:
+Update all sysexts managed by sysexts-manager:
 
 ```
-$ sudo sysext-manager refresh
+$ sudo sysexts-manager update
 ```
 
-Listing all sysexts managed by sysexts-manager:
+Create temporary symlinks in `/run/extensions`:
 
 ```
-$ sudo sysext-manager status
+$ sudo sysexts-manager symlinks
 ```
 
-Updating all sysexts managed by sysexts-manager:
+Ask systemd to refresh enabled sysexts:
 
 ```
-$ sudo sysext-manager update
+$ sudo sysexts-manager refresh
 ```
 
-Removing the tree sysext and all installed images:
+List all sysexts managed by sysexts-manager:
 
 ```
-$ sudo sysext-manager remove tree
-$ sudo sysext-manager refresh
+$ sysexts-manager status
+```
+
+Remove the tree sysext and all installed images:
+
+```
+$ sudo sysexts-manager remove tree
+$ sudo sysexts-manager refresh
 ```
 
 ## Why?
