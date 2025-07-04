@@ -2,7 +2,7 @@ use std::process;
 use std::result::Result::Ok;
 
 use anyhow::{Result, anyhow};
-use clap::{Args, Parser, Subcommand, error};
+use clap::{Parser, Subcommand};
 use log::{LevelFilter, debug};
 
 #[derive(Parser, Debug)]
@@ -63,7 +63,7 @@ fn refresh() -> Result<()> {
                 Ok(())
             }
         }
-        Err(e) => Err(anyhow!("Failed to refresh sysexts")),
+        Err(_e) => Err(anyhow!("Failed to refresh sysexts")),
     }
 }
 
