@@ -24,7 +24,7 @@ runs:
         gh release list --limit 100 --json tagName > releases.json
 
         for sysext in $(echo ${SYSEXTS} | tr ';' ' '); do
-          rm -f ./SHA256SUMS* ./*.conf
+          rm -f ./SHA256SUMS*
 
           releases=(
             $(
@@ -60,8 +60,6 @@ runs:
           else
             echo "Creating new release: ${sysext}"
 
-            sed "s/%%SYSEXT%%/${sysext}/g" .workflow-templates/systemd-sysupdate.conf > ${sysext}.conf
-
             {
             echo "Versions available:"
             echo "\`\`\`"
@@ -80,11 +78,11 @@ runs:
               --notes-file notes \
               "${sysext}" \
               --latest=false \
-              ./SHA256SUMS ./${sysext}.conf
+              ./SHA256SUMS
           fi
         done
 
-        rm -f ./SHA256SUMS* ./*.conf
+        rm -f ./SHA256SUMS*
 
         for sysext in $(echo ${SYSEXTS} | tr ';' ' '); do
             curl --location --fail --output "SHA256SUMS.${sysext}" "${RELEASEURL}/${sysext}/SHA256SUMS" || touch "SHA256SUMS.${sysext}"
