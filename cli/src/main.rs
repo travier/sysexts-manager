@@ -71,8 +71,9 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let level = match cli.verbose {
-        0 => LevelFilter::Info,
-        1 => LevelFilter::Debug,
+        0 => LevelFilter::Warn,
+        1 => LevelFilter::Info,
+        2 => LevelFilter::Debug,
         _ => LevelFilter::Trace,
     };
 

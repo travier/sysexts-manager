@@ -326,6 +326,8 @@ impl Manager {
 
         // TODO: Add config to manager
 
+        println!("Successfully added configuration for sysext: {name}");
+
         Ok(())
     }
 
@@ -354,7 +356,7 @@ impl Manager {
                 let sysext_store = self.rootdir.join(DEFAULT_STORE);
                 for image in images {
                     let path = sysext_store.join(image);
-                    info!("Removing: {}", path.display());
+                    info!("Removing sysext image: {}", path.display());
                     remove_file(&path)?
                 }
             }
@@ -365,10 +367,12 @@ impl Manager {
             let configdir = self.rootdir.join(dir);
             let conffile = configdir.join(format!("{name}.conf"));
             if conffile.exists() {
-                info!("Removing: {}", conffile.display());
+                info!("Removing sysext config: {}", conffile.display());
                 remove_file(&conffile)?;
             }
         }
+
+        println!("Successfully removed configuration and images for sysext: {name}");
 
         Ok(())
     }
@@ -513,7 +517,7 @@ impl Manager {
                         (remote_hash, remote_image)
                     }
                     Ok(Cmp::Eq) => {
-                        info!("No update found for '{}'", img.name);
+                        println!("No update found for '{}'", img.name);
                         // TODO check hash
                         return Ok(());
                     }
@@ -532,6 +536,7 @@ impl Manager {
             }
         };
 
+        println!("Downloading update: {}", download_image.path());
         // info!("curl --location --silent --output ... {}/{}", config.Url, download_image.path());
         // Find latest version that matches version_id
         // Check if we already have it and check its SHA256SUM again
@@ -568,6 +573,8 @@ impl Manager {
 
         // TODO: Add image to manager
 
+        println!("Successfully updated sysexts: {}", config.Name);
+
         Ok(())
     }
 
@@ -589,7 +596,7 @@ impl Manager {
             self.update_sysext(c, images)?;
         }
 
-        info!("Update completed");
+        println!("Successfully updated all sysexts");
         Ok(())
     }
 
@@ -598,7 +605,7 @@ impl Manager {
         for (n, c) in &self.configs {
             println!("  {n} ({}, {}):", c.Kind, c.Url);
             match self.images.get(n) {
-                None => println!("No images installed for that sysext"),
+                None => println!("    No images installed for that sysext"),
                 Some(images) => {
                     for i in images {
                         println!("    {}", i.path())
