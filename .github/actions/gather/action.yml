@@ -46,6 +46,8 @@ runs:
           for rel in ${releases[@]}; do
             echo "Fetching SHA256SUMS for release: ${rel}"
             curl --location --fail --output "SHA256SUMS.${rel}" "${RELEASEURL}/${rel}/SHA256SUMS" || touch "SHA256SUMS.${rel}"
+            echo "Fetching sysext for release: ${rel}"
+            curl --location --fail --output "${rel}.raw" "${RELEASEURL}/${rel}/${rel}.raw" || rm "SHA256SUMS.${rel}"
           done
           ls ./SHA256SUMS.* | sort -h | xargs cat > SHA256SUMS
           new="$(cat SHA256SUMS | sha256sum)"
@@ -78,11 +80,11 @@ runs:
               --notes-file notes \
               "${sysext}" \
               --latest=false \
-              ./SHA256SUMS
+              ./SHA256SUMS ./*.raw
           fi
         done
 
-        rm -f ./SHA256SUMS*
+        rm -f ./SHA256SUMS* ./*.raw
 
         for sysext in $(echo ${SYSEXTS} | tr ';' ' '); do
             curl --location --fail --output "SHA256SUMS.${sysext}" "${RELEASEURL}/${sysext}/SHA256SUMS" || touch "SHA256SUMS.${sysext}"
