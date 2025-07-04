@@ -22,8 +22,8 @@ env:
 jobs:
   tests-stable:
     name: Tests, stable toolchain
-    runs-on: ubuntu-latest
-    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    runs-on: "ubuntu-24.04"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -39,8 +39,8 @@ jobs:
         run: cargo test --all-targets
   tests-release-stable:
     name: Tests (release), stable toolchain
-    runs-on: ubuntu-latest
-    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    runs-on: "ubuntu-24.04"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -56,8 +56,8 @@ jobs:
         run: cargo test --all-targets --release
   tests-release-msrv:
     name: Tests (release), minimum supported toolchain
-    runs-on: ubuntu-latest
-    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    runs-on: "ubuntu-24.04"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -79,8 +79,8 @@ jobs:
         run: cargo test --all-targets --release
   linting:
     name: Lints, pinned toolchain
-    runs-on: ubuntu-latest
-    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    runs-on: "ubuntu-24.04"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -97,8 +97,8 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
   tests-other-channels:
     name: Tests, unstable toolchain
-    runs-on: ubuntu-latest
-    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    runs-on: "ubuntu-24.04"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
     continue-on-error: true
     strategy:
       matrix:
