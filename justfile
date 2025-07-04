@@ -5,6 +5,13 @@ build-run *args:
     cargo build
     ./target/debug/sysexts-manager {{args}}
 
+# Build sysext
+sysext:
+    cargo build --release
+    mkdir -p sysexts-manager/usr/bin
+    cp target/release/sysexts-manager sysexts-manager/usr/bin
+    cd sysexts-manager && just build quay.io/fedora-ostree-desktops/base-atomic:42
+
 # Serve the build dir for remote testing
 #
 # When using libvirtd, open firewall port with:
