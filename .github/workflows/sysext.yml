@@ -64,7 +64,7 @@ jobs:
     needs:
       - build-x86_64
       # - build-aarch64
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: "Checkout repo"
         uses: actions/checkout@v4

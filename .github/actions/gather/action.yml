@@ -16,7 +16,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         SYSEXTS: ${{ inputs.sysexts }}
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
       shell: bash
       run: |
         set -euxo pipefail
