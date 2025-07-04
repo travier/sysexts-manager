@@ -4,6 +4,7 @@ RUN dnf install -y \
         cpio \
         dnf5-plugins \
         erofs-utils \
+        gcc \
         git \
         jq \
         just \
