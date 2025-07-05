@@ -12,6 +12,16 @@ sysext:
     cp target/release/sysexts-manager sysexts-manager/usr/bin
     cd sysexts-manager && just build quay.io/fedora-ostree-desktops/base-atomic:42
 
+# Build and deploy sysext in remote host
+sysext-remote: sysext
+    scp ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    ssh fcos-next "sudo mv sysexts-manager-*.raw /var/lib/extensions/sysexts-manager.raw && sudo systemctl restart systemd-sysext"
+
+# Basic functionnality test on a remote host
+test-remote: sysext
+    scp ./test-data/basic-test.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    ssh fcos-next ./basic-test.sh
+
 # Serve the build dir for remote testing
 #
 # When using libvirtd, open firewall port with:
