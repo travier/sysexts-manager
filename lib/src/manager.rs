@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fmt;
-use std::fs::{self, File, remove_file, symlink_metadata};
-// use std::io::BufReader;
-use std::io::prelude::*;
+use std::fs::{self, File, remove_file, rename, symlink_metadata};
+use std::io::{Result as IoResult, Write};
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
@@ -58,6 +57,36 @@ const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
 // const DEFAULT_EXTENSIONS: &str = "var/lib/extensions";
 const RUNTIME_EXTENSIONS: &str = "run/extensions";
+
+// https://users.rust-lang.org/t/read-and-hash-sha1-at-the-same-time/54458
+struct Sha256Writer<W> {
+    writer: W,
+    hasher: Sha256,
+}
+
+impl<W> Sha256Writer<W> {
+    fn new(writer: W) -> Self {
+        Sha256Writer {
+            writer,
+            hasher: Sha256::new(),
+        }
+    }
+
+    fn digest(self) -> String {
+        hex::encode(self.hasher.finalize())
+    }
+}
+
+impl<W: Write> Write for Sha256Writer<W> {
+    fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
+        self.hasher.update(buf);
+        self.writer.write(buf)
+    }
+
+    fn flush(&mut self) -> IoResult<()> {
+        self.writer.flush()
+    }
+}
 
 #[allow(dead_code)]
 pub fn new() -> Result<Manager> {
@@ -156,6 +185,11 @@ impl Manager {
             for name in self.configs.keys() {
                 let filename_osstr = filename.file_name();
                 let filename_str = filename_osstr.to_str().unwrap();
+                if filename_str.ends_with(".tmp") {
+                    debug!("Cleaning up temporary file: {filename_str}");
+                    remove_file(self.rootdir.join(DEFAULT_STORE).join(filename_osstr))?;
+                    continue;
+                }
                 if filename_str.starts_with(name) {
                     found = true;
                     let Ok(image) = Image::new(name, filename.file_name(), None) else {
@@ -412,15 +446,14 @@ impl Manager {
             "Downloading SHA256SUMS for: {} (version_id: {}, arch: {})",
             config.Name, self.system.version_id, self.system.arch
         );
-
-        // info!("curl --location --silent --output ... {}/SHA256SUMS", config.Url);
         let client = reqwest::blocking::Client::new();
         let sha256sums = client
             .get(format!("{}/SHA256SUMS", config.Url))
             .send()?
             .text()?;
-        // println!("{}", sha256sums.to_string());
+        debug!("{sha256sums}");
 
+        // Parse images and hashes list from SHA256SUM file
         let mut remote_images: Vec<Image> = Vec::new();
         for line in sha256sums.lines() {
             let mut split = line.split("  ");
@@ -455,7 +488,7 @@ impl Manager {
         }
         debug!("Found potential sysexts:\n{parsed_sha256sums}");
 
-        // Look for latest remote image
+        // Search latest image from SHA256SUM list that matches arch & version_id
         let remote_image = match self.find_latest_image(&config.Name, &remote_images)? {
             None => {
                 error!("No remote valid image found for sysext: {}", config.Name);
@@ -470,6 +503,7 @@ impl Manager {
             }
         };
 
+        // Compare it with the latest image installed locally, matching arch & version_id
         let download_image = match self.find_latest_image(&config.Name, images)? {
             None => {
                 info!(
@@ -485,16 +519,16 @@ impl Manager {
                 );
                 match compare(&img.version, &remote_image.version) {
                     Ok(Cmp::Lt) => {
-                        info!("Downloading: {}", remote_image.version);
+                        info!("Found update to download: {}", remote_image.version);
                         remote_image
                     }
                     Ok(Cmp::Eq) => {
                         println!("No update found for '{}'", img.name);
-                        // TODO check hash
+                        // TODO: Compute local image SHA256SUM, compare it and warn
                         return Ok(());
                     }
                     Ok(Cmp::Gt) => {
-                        debug!("Local image is newer for '{}': {}", img.name, img.version);
+                        warn!("Local image is newer for '{}': {}", img.name, img.version);
                         return Ok(());
                     }
                     _ => {
@@ -509,26 +543,28 @@ impl Manager {
         };
 
         println!("Downloading update: {}", download_image.path());
-        // info!("curl --location --silent --output ... {}/{}", config.Url, download_image.path());
-        // Find latest version that matches version_id
-        // Check if we already have it and check its SHA256SUM again
-        // Download if needed via systemd-run command call to curl
         debug!("Downloading: {}/{}", config.Url, download_image.path());
-        let sysext_body = client
+        let mut response = client
             .get(format!("{}/{}", config.Url, download_image.path()))
-            .send()?
-            .bytes()?;
+            .send()?;
 
-        // TODO: Compute that progressively while downloading
-        let mut hasher = Sha256::new();
-        hasher.update(&sysext_body);
-        let result = hex::encode(hasher.finalize());
+        // Setup a temporary file
+        let sysext_store = self.rootdir.join(DEFAULT_STORE);
+        let sysext_tmp = sysext_store.join(format!("{}.tmp", download_image.path()));
+        let file = File::create(&sysext_tmp)?;
 
-        if result != download_image.hash.clone().unwrap_or("?".into()) {
+        // Create a writer to compute sha256sum hash as we download the image to the temporary file
+        let mut writer = Sha256Writer::new(file);
+        response.copy_to(&mut writer)?;
+
+        let digest = writer.digest();
+        if digest != download_image.hash.clone().unwrap_or("?".into()) {
+            debug!("Invalid hash, removing file: {}", sysext_tmp.display());
+            remove_file(sysext_tmp)?;
             return Err(anyhow!(
                 "Invalid hash for {}: got {} vs expected {}",
                 download_image.path(),
-                result,
+                digest,
                 download_image.hash.unwrap_or("?".into())
             ));
         }
@@ -538,18 +574,17 @@ impl Manager {
             download_image.hash.clone().unwrap_or("?".into())
         );
 
-        let sysext_store = self.rootdir.join(DEFAULT_STORE);
-        let sysextfile = sysext_store.join(download_image.path());
-
-        // Write to a temp file and rename
-        let mut file = File::create(&sysextfile)?;
-        file.write_all(&sysext_body)?;
-
-        info!("Downloaded: {}", sysextfile.display());
+        // Rename to final name
+        let sysext_final = sysext_store.join(download_image.path());
+        debug!(
+            "Renaming: {} -> {}",
+            sysext_tmp.display(),
+            sysext_final.display()
+        );
+        rename(sysext_tmp, &sysext_final)?;
+        println!("Successfully updated sysext: {}", config.Name);
 
         // TODO: Add image to manager
-
-        println!("Successfully updated sysexts: {}", config.Name);
 
         Ok(())
     }
