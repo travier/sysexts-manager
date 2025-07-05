@@ -37,10 +37,11 @@ pub struct Image {
     pub architecture: Architecture,
     pub version_id: String,
     pub version: String,
+    pub hash: Option<String>,
 }
 
 impl Image {
-    pub fn new(name: &str, f: OsString) -> Result<Image> {
+    pub fn new(name: &str, f: OsString, h: Option<String>) -> Result<Image> {
         let Some(filename) = f.to_str() else {
             return Err(anyhow!("Failed to parse sysext image name: {:?}", name));
         };
@@ -103,6 +104,7 @@ impl Image {
             architecture: arch,
             version_id: version_id.into(),
             version,
+            hash: h,
         })
     }
 

@@ -158,7 +158,7 @@ impl Manager {
                 let filename_str = filename_osstr.to_str().unwrap();
                 if filename_str.starts_with(name) {
                     found = true;
-                    let Ok(image) = Image::new(name, filename.file_name()) else {
+                    let Ok(image) = Image::new(name, filename.file_name(), None) else {
                         error!("Invalid sysext name: {}", filename.path().display());
                         break;
                     };
@@ -184,25 +184,27 @@ impl Manager {
                 );
             }
         }
-        let sysexts: Vec<String> = self
-            .images
-            .iter()
-            .map(|(name, image)| {
-                format!(
-                    "{} ({})",
-                    name,
-                    image
-                        .iter()
-                        .map(|i| { i.version.clone() })
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )
-            })
-            .collect();
-        if sysexts.is_empty() {
+        if self.images.is_empty() {
             info!("No sysext loaded");
         } else {
-            info!("Loaded versions for sysexts: {}", sysexts.join(", "));
+            info!(
+                "Loaded versions for sysexts: {}",
+                self.images
+                    .iter()
+                    .map(|(name, image)| {
+                        format!(
+                            "{} ({})",
+                            name,
+                            image
+                                .iter()
+                                .map(|i| { i.version.clone() })
+                                .collect::<Vec<String>>()
+                                .join(", ")
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
         }
         Ok(())
     }
@@ -218,12 +220,12 @@ impl Manager {
             return Err(anyhow!("{} is not a directory", &run_extensions.display()));
         }
 
-        let mut images = Vec::new();
+        let mut images_to_enable = Vec::new();
 
         for (name, config) in &self.configs {
-            let Some(sysexts) = self.images.get(name) else {
+            let Some(sysext_images) = self.images.get(name) else {
                 error!(
-                    "Config found for '{name}' but no sysexts found. Not setting up. Do an update?"
+                    "Config found for '{name}' but no images found. Not setting up. Update first."
                 );
                 continue;
             };
@@ -231,59 +233,32 @@ impl Manager {
                 unimplemented!();
             }
 
-            let mut latest = None;
-            for image in sysexts {
-                // Filter images that we can not use
-                if image.architecture != self.system.arch {
-                    info!("Ignoring '{}' (incompatible architecture)", image.path());
-                    continue;
-                }
-                if image.version_id != self.system.version_id {
-                    info!("Ignoring '{}' (incompatible release)", image.path());
-                    continue;
-                }
-                match &latest {
-                    None => {
-                        latest = Some(image.clone());
-                    }
-                    Some(l) => match compare(&image.version, &l.version) {
-                        Ok(Cmp::Lt) => debug!("{}: Skipping {}", name, image.version),
-                        Ok(Cmp::Eq) => error!(
-                            "{}: Should never happen: {} = {}",
-                            name, image.version, l.version
-                        ),
-                        Ok(Cmp::Gt) => {
-                            debug!("{}: Selecting {}", name, image.version);
-                            latest = Some(image.clone());
-                        }
-                        _ => return Err(anyhow!("Invalid version number")),
-                    },
-                };
-            }
-            match latest {
+            match self.find_latest_image(name, sysext_images)? {
                 None => {
                     error!("No image to enable for sysext: {name}");
                     continue;
                 }
                 Some(img) => {
                     debug!("Enabling sysext: {} {}", img.name, img.version);
-                    images.push(img);
+                    images_to_enable.push(img);
                 }
             };
         }
 
-        let enable = images
-            .iter()
-            .map(|image| format!("{} ({})", image.name, image.version))
-            .collect::<Vec<String>>()
-            .join(", ");
-        if enable.is_empty() {
+        if images_to_enable.is_empty() {
             info!("No sysexts to enable");
             return Ok(());
         }
-        info!("Enabling sysexts: {enable}");
+        info!(
+            "Enabling sysexts: {}",
+            images_to_enable
+                .iter()
+                .map(|image| format!("{} ({})", image.name, image.version))
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
 
-        for image in images {
+        for image in images_to_enable {
             // Setup symlinks in /run/extensions.version for the sysexts found
             let original = format!("../../var/lib/extensions.d/{}", image.path());
             let link = format!("{}/{}.raw", run_extensions.display(), image.name);
@@ -295,6 +270,43 @@ impl Manager {
         }
 
         Ok(())
+    }
+
+    fn find_latest_image(
+        &self,
+        name: &String,
+        sysext_images: &Vec<Image>,
+    ) -> Result<Option<Image>> {
+        let mut latest = None;
+        for image in sysext_images {
+            // Filter images that we can not use
+            if image.architecture != self.system.arch {
+                info!("Ignoring '{}' (incompatible architecture)", image.path());
+                continue;
+            }
+            if image.version_id != self.system.version_id {
+                info!("Ignoring '{}' (incompatible release)", image.path());
+                continue;
+            }
+            match &latest {
+                None => {
+                    latest = Some(image.clone());
+                }
+                Some(l) => match compare(&image.version, &l.version) {
+                    Ok(Cmp::Lt) => debug!("{}: Skipping {}", name, image.version),
+                    Ok(Cmp::Eq) => error!(
+                        "{}: Should never happen: {} = {}",
+                        name, image.version, l.version
+                    ),
+                    Ok(Cmp::Gt) => {
+                        debug!("{}: Selecting {}", name, image.version);
+                        latest = Some(image.clone());
+                    }
+                    _ => return Err(anyhow!("Invalid version number")),
+                },
+            };
+        }
+        Ok(latest)
     }
 
     pub fn add_sysext(&self, name: &str, kind: &str, url: &str, force: &bool) -> Result<()> {
@@ -409,7 +421,7 @@ impl Manager {
             .text()?;
         // println!("{}", sha256sums.to_string());
 
-        let mut hashes: Vec<(String, Image)> = Vec::new();
+        let mut remote_images: Vec<Image> = Vec::new();
         for line in sha256sums.lines() {
             let mut split = line.split("  ");
             let hash: String = match split.next() {
@@ -426,15 +438,15 @@ impl Manager {
                     continue;
                 }
             };
-            let Ok(image) = Image::new(&config.Name, filename.clone().into()) else {
+            let Ok(image) = Image::new(&config.Name, filename.clone().into(), Some(hash)) else {
                 error!("Invalid sysext name: {filename}");
                 continue;
             };
-            hashes.push((hash, image));
+            remote_images.push(image);
         }
-        let parsed_sha256sums = hashes
+        let parsed_sha256sums = remote_images
             .iter()
-            .map(|(h, i)| format!("{} ({})", i.path(), h))
+            .map(|i| format!("{} ({})", i.path(), i.hash.clone().unwrap_or("?".into())))
             .collect::<Vec<String>>()
             .join("\n");
         if parsed_sha256sums.is_empty() {
@@ -444,85 +456,27 @@ impl Manager {
         debug!("Found potential sysexts:\n{parsed_sha256sums}");
 
         // Look for latest remote image
-        let mut latest_remote = None;
-        for (hash, image) in hashes {
-            // Filter images that we can not use
-            if image.architecture != self.system.arch {
-                debug!("Ignoring '{}' (incompatible architecture)", image.path());
-                continue;
-            }
-            if image.version_id != self.system.version_id {
-                debug!("Ignoring '{}' (incompatible release)", image.path());
-                continue;
-            }
-            match &latest_remote {
-                None => {
-                    latest_remote = Some((hash, image.clone()));
-                }
-                Some((_h, i)) => match compare(&image.version, &i.version) {
-                    Ok(Cmp::Lt) => debug!("{}: Skipping {}", config.Name, image.version),
-                    Ok(Cmp::Eq) => error!(
-                        "{}: Should never happen: {} = {}",
-                        config.Name, image.version, i.version
-                    ),
-                    Ok(Cmp::Gt) => {
-                        debug!("{}: Selecting {}", config.Name, image.version);
-                        latest_remote = Some((hash, image.clone()));
-                    }
-                    _ => panic!("Invalid version number"),
-                },
-            };
-        }
-        let (remote_hash, remote_image) = match latest_remote {
+        let remote_image = match self.find_latest_image(&config.Name, &remote_images)? {
             None => {
                 error!("No remote valid image found for sysext: {}", config.Name);
                 return Ok(());
             }
-            Some((h, i)) => {
+            Some(i) => {
                 debug!(
                     "Found latest remote image for sysext: {} {}",
                     i.name, i.version
                 );
-                (h, i)
+                i
             }
         };
 
-        let mut latest_local = None;
-        for image in images {
-            // Filter images that we can not use
-            if image.architecture != self.system.arch {
-                debug!("Ignoring '{}' (incompatible architecture)", image.path());
-                continue;
-            }
-            if image.version_id != self.system.version_id {
-                debug!("Ignoring '{}' (incompatible release)", image.path());
-                continue;
-            }
-            match &latest_local {
-                None => {
-                    latest_local = Some(image.clone());
-                }
-                Some(l) => match compare(&image.version, &l.version) {
-                    Ok(Cmp::Lt) => debug!("{}: Skipping {}", config.Name, image.version),
-                    Ok(Cmp::Eq) => error!(
-                        "{}: Should never happen: {} = {}",
-                        config.Name, image.version, l.version
-                    ),
-                    Ok(Cmp::Gt) => {
-                        debug!("{}: Selecting {}", config.Name, image.version);
-                        latest_local = Some(image.clone());
-                    }
-                    _ => return Err(anyhow!("Invalid version number")),
-                },
-            };
-        }
-        let (download_hash, download_image) = match latest_local {
+        let download_image = match self.find_latest_image(&config.Name, images)? {
             None => {
                 info!(
                     "No local image for sysext: {}. Downloading: {}",
                     config.Name, remote_image.version
                 );
-                (remote_hash, remote_image)
+                remote_image
             }
             Some(img) => {
                 debug!(
@@ -532,7 +486,7 @@ impl Manager {
                 match compare(&img.version, &remote_image.version) {
                     Ok(Cmp::Lt) => {
                         info!("Downloading: {}", remote_image.version);
-                        (remote_hash, remote_image)
+                        remote_image
                     }
                     Ok(Cmp::Eq) => {
                         println!("No update found for '{}'", img.name);
@@ -570,15 +524,19 @@ impl Manager {
         hasher.update(&sysext_body);
         let result = hex::encode(hasher.finalize());
 
-        if result != download_hash {
+        if result != download_image.hash.clone().unwrap_or("?".into()) {
             return Err(anyhow!(
                 "Invalid hash for {}: got {} vs expected {}",
                 download_image.path(),
                 result,
-                download_hash
+                download_image.hash.unwrap_or("?".into())
             ));
         }
-        debug!("Valid hash for {} {}", download_image.path(), download_hash);
+        debug!(
+            "Valid hash for {} {}",
+            download_image.path(),
+            download_image.hash.clone().unwrap_or("?".into())
+        );
 
         let sysext_store = self.rootdir.join(DEFAULT_STORE);
         let sysextfile = sysext_store.join(download_image.path());
