@@ -8,9 +8,13 @@ use log::{LevelFilter, debug};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
 struct Cli {
-    /// Log verbosity. Defaults to Info, -v for Debug, -vv for Trace
+    /// Log verbosity. Defaults to Warn, -v for Info, -vv for Debug, -vvv for Trace
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
+
+    /// How many threads will be used for parallel operations such as image downloads
+    #[arg(short = 'j', long, global = true, default_value_t = 3)]
+    jobs: u8,
 
     #[command(subcommand)]
     command: Command,
@@ -90,6 +94,12 @@ fn main() -> Result<()> {
     // read os-release
     // find current release (version_id) & architecture & variant (?) to filter sysexts
     // ostree::rpm_ostree_status()?;
+
+    // Default to updating and downloading a maximum of 3 sysext images in parallel
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(cli.jobs.into())
+        .build_global()
+        .unwrap();
 
     match &cli.command {
         Command::Symlinks {} => manager.enable(),
