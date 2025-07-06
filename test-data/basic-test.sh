@@ -20,7 +20,11 @@ sudo rm -rf /etc/sysexts-manager/*.conf
 systemd-sysext status
 
 sudo "${cmd[@]}" add tree https://extensions.fcos.fr/extensions/tree
+sudo "${cmd[@]}" add htop https://extensions.fcos.fr/extensions/htop
+sudo "${cmd[@]}" add gdb  https://extensions.fcos.fr/extensions/gdb
 test -f /etc/sysexts-manager/tree.conf
+test -f /etc/sysexts-manager/htop.conf
+test -f /etc/sysexts-manager/gdb.conf
 
 sudo "${cmd[@]}" update
 test -f /var/lib/extensions.d/tree*.raw
@@ -36,6 +40,8 @@ tree > /dev/null
 systemd-sysext status
 
 sudo "${cmd[@]}" remove tree
+sudo "${cmd[@]}" remove htop
+sudo "${cmd[@]}" remove gdb
 test ! -L /run/extensions/tree.raw
 test ! -f /var/lib/extensions.d/tree*.raw
 test ! -f /etc/sysexts-manager/tree.conf

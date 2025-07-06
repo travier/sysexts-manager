@@ -8,7 +8,7 @@ use version_compare::Version;
 
 use super::manager::Architecture;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[allow(non_snake_case, dead_code)]
 pub struct Config {
     pub Name: String,

@@ -11,6 +11,7 @@ use hex;
 use log::{debug, error, info, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
+use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use version_compare::{Cmp, compare};
 
@@ -602,10 +603,12 @@ impl Manager {
         }
 
         let empty: Vec<Image> = vec![];
-        for (n, c) in &self.configs {
-            let images = self.images.get(n).unwrap_or(&empty);
-            self.update_sysext(c, images)?;
-        }
+        self.configs.clone().into_par_iter().for_each(|(n, c)| {
+            let images = self.images.get(&n).unwrap_or(&empty);
+            self.update_sysext(&c, images).unwrap_or_else(|e| {
+                error!("Failed to update sysext: {n}: {e}");
+            });
+        });
 
         println!("Successfully updated all sysexts");
         Ok(())

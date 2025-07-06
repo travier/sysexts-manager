@@ -12,6 +12,10 @@ struct Cli {
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
 
+    /// How many threads will be used for parallel operations such as image downloads
+    #[arg(short = 'j', long, global = true, default_value_t = 3)]
+    jobs: u8,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -90,6 +94,12 @@ fn main() -> Result<()> {
     // read os-release
     // find current release (version_id) & architecture & variant (?) to filter sysexts
     // ostree::rpm_ostree_status()?;
+
+    // Default to updating and downloading a maximum of 3 sysext images in parallel
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(cli.jobs.into())
+        .build_global()
+        .unwrap();
 
     match &cli.command {
         Command::Symlinks {} => manager.enable(),
