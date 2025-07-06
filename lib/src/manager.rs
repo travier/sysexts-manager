@@ -89,7 +89,6 @@ impl<W: Write> Write for Sha256Writer<W> {
     }
 }
 
-#[allow(dead_code)]
 pub fn new() -> Result<Manager> {
     // let dir = cap_std::open_ambient_dir("/")?;
     // new_with_root(Path::new(dir))
@@ -375,7 +374,7 @@ impl Manager {
 
         // TODO: Add config to manager
 
-        println!("Successfully added configuration for sysext: {name}");
+        println!("Added configuration for sysext: {name} ({url})");
 
         Ok(())
     }
@@ -437,7 +436,7 @@ impl Manager {
             }
         }
 
-        println!("Successfully removed configuration and images for sysext: {name}");
+        println!("Removed configuration and images for sysext: {name}");
 
         Ok(())
     }
