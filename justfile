@@ -18,9 +18,9 @@ sysext-remote: sysext
     ssh fcos-next "sudo mv sysexts-manager-*.raw /var/lib/extensions/sysexts-manager.raw && sudo systemctl restart systemd-sysext"
 
 # Basic functionnality test on a remote host
-test-remote: sysext
+test-remote *args: sysext
     scp ./test-data/basic-test.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
-    ssh fcos-next ./basic-test.sh
+    ssh fcos-next ./basic-test.sh {{args}}
 
 # Serve the build dir for remote testing
 #
