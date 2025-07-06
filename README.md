@@ -6,62 +6,62 @@ Work in progress manager for systemd system extensions (sysexts).
 
 Install the `sysexts-manager` pre-built sysext:
 
-```
-$ VERSION="0.2.0" # sysexts-manager version
-$ VERSION_ID="42" # Fedora release
-$ ARCH="x86-64"   # or arm64
-$ URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
-$ NAME="sysexts-manager-${VERSION}-${VERSION_ID}-${ARCH}.raw"
-$ sudo install -d -m 0755 -o 0 -g 0 /var/lib/extensions /run/extensions
-$ curl --silent --fail --location "${URL}/${NAME}" \
-      | sudo bash -c "cat > /var/lib/extensions.d/${NAME}"
-$ ln -snf "/var/lib/extensions.d/${NAME}" "/run/extensions/sysexts-manager.raw"
-$ sudo restorecon -RFv /var/lib/extensions /run/extensions
-$ sudo systemctl enable systemd-sysext.service
-$ sudo systemctl restart systemd-sysext.service
+```bash
+VERSION="0.2.0" # sysexts-manager version
+VERSION_ID="42" # Fedora release
+ARCH="x86-64"   # or arm64
+URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
+NAME="sysexts-manager-${VERSION}-${VERSION_ID}-${ARCH}.raw"
+sudo install -d -m 0755 -o 0 -g 0 /var/lib/extensions /run/extensions
+curl --silent --fail --location "${URL}/${NAME}" \
+    | sudo bash -c "cat > /var/lib/extensions.d/${NAME}"
+ln -snf "/var/lib/extensions.d/${NAME}" "/run/extensions/sysexts-manager.raw"
+sudo restorecon -RFv /var/lib/extensions /run/extensions
+sudo systemctl enable systemd-sysext.service
+sudo systemctl restart systemd-sysext.service
 ```
 
 As `sysexts-manager` is a sysext, it is capable of managing itself:
 
-```
-$ sysexts-manager status
+```bash
+sysexts-manager status
 ```
 
 Install the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
 
-```
-$ sudo sysexts-manager add tree https://extensions.fcos.fr/extensions
+```bash
+sudo sysexts-manager add tree https://extensions.fcos.fr/extensions
 ```
 
 Update all sysexts managed by sysexts-manager:
 
-```
-$ sudo sysexts-manager update
+```bash
+sudo sysexts-manager update
 ```
 
 Create temporary symlinks in `/run/extensions`:
 
-```
-$ sudo sysexts-manager symlinks
+```bash
+sudo sysexts-manager symlinks
 ```
 
 Ask systemd to refresh enabled sysexts:
 
-```
-$ sudo sysexts-manager refresh
+```bash
+sudo sysexts-manager refresh
 ```
 
 List all sysexts managed by sysexts-manager:
 
-```
-$ sysexts-manager status
+```bash
+sysexts-manager status
 ```
 
 Remove the tree sysext and all installed images:
 
-```
-$ sudo sysexts-manager remove tree
-$ sudo sysexts-manager refresh
+```bash
+sudo sysexts-manager remove tree
+sudo sysexts-manager refresh
 ```
 
 ## How does this work on boot?
