@@ -22,21 +22,11 @@ test-remote *args: sysext
     scp ./test-data/basic-test.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./basic-test.sh {{args}}
 
-# Serve the build dir for remote testing
-#
-# When using libvirtd, open firewall port with:
-# sudo firewall-cmd --zone=libvirt --add-port=8000/tcp
-serve:
-    cd target/debug && simple-http-server
-
 # Run on a remote host
-#
-# `run.sh`:
-# #!/bin/bash
-# curl -O --silent http://192.168.100.1:8000/sysexts-manager && chmod a+x sysexts-manager && sudo ./sysexts-manager "${@}"
 build-run-remote *args:
     cargo build
-    ssh -t fcos-next ./run.sh {{args}}
+    scp target/debug/sysexts-manager fcos-next:
+    ssh -t fcos-next sudo ./sysexts-manager {{args}}
 
 # Run outside of toolbox
 build-run-local *args:
