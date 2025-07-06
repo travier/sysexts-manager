@@ -7,7 +7,7 @@ Work in progress manager for systemd system extensions (sysexts).
 Install the `sysexts-manager` pre-built sysext:
 
 ```
-$ VERSION="0.0.1" # sysexts-manager version
+$ VERSION="0.2.0" # sysexts-manager version
 $ VERSION_ID="42" # Fedora release
 $ ARCH="x86-64"   # or arm64
 $ URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
