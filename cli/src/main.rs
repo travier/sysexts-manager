@@ -8,7 +8,7 @@ use log::{LevelFilter, debug};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
 struct Cli {
-    /// Log verbosity. Defaults to Info, -v for Debug, -vv for Trace
+    /// Log verbosity. Defaults to Warn, -v for Info, -vv for Debug, -vvv for Trace
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
 
