@@ -1,59 +1,79 @@
 #!/bin/bash
 set -euo pipefail
-set -x
+# set -x
+
+# Execute a command, also writing the cmdline to stdout
+runv() {
+    echo "+" "$@"
+    "$@"
+}
 
 cmd=(
     'sysexts-manager'
     "${@}"
 )
 
+extensions=(
+    'gdb'
+    'htop'
+    'tree'
+)
+
 sysext="$(ls sysexts-manager-*.raw)"
-sudo mv "${sysext}" /var/lib/extensions.d
-mkdir -p /run/extensions/
-sudo ln -snf /var/lib/extensions.d/"${sysext}" /run/extensions/sysexts-manager.raw
-sudo systemctl restart systemd-sysext
+sudo mv "${sysext}" "/var/lib/extensions.d"
+sudo install -d -m 0755 -o 0 -g 0 "/var/lib/extensions" "/run/extensions"
+sudo ln -snf "/var/lib/extensions.d/${sysext}" "/run/extensions/sysexts-manager.raw"
+sudo restorecon -RFv "/var/lib/extensions" "/run/extensions" > /dev/null
+sudo systemctl enable systemd-sysext.service
+sudo systemctl restart systemd-sysext.service
 
 # Clean up
-sudo rm -rf /etc/sysexts-manager/*.conf
+sudo rm -rf "/etc/sysexts-manager/"*".conf"
 
-"${cmd[@]}" status
-systemd-sysext status
+runv "${cmd[@]}" status
+runv systemd-sysext status
 
-sudo "${cmd[@]}" add tree https://extensions.fcos.fr/extensions
-sudo "${cmd[@]}" add htop https://extensions.fcos.fr/extensions
-sudo "${cmd[@]}" add gdb  https://extensions.fcos.fr/extensions
-test -f /etc/sysexts-manager/tree.conf
-test -f /etc/sysexts-manager/htop.conf
-test -f /etc/sysexts-manager/gdb.conf
+for ext in "${extensions[@]}"; do
+    runv sudo "${cmd[@]}" add "${ext}" "https://extensions.fcos.fr/extensions"
+    test -f "/etc/sysexts-manager/${ext}.conf"
+done
 
-sudo "${cmd[@]}" update
-test -f /var/lib/extensions.d/tree*.raw
+runv sudo "${cmd[@]}" update
+for ext in "${extensions[@]}"; do
+    test -f "/var/lib/extensions.d/${ext}"*".raw"
+done
 
-sudo "${cmd[@]}" symlinks
-test -L /run/extensions/tree.raw
+runv sudo "${cmd[@]}" symlinks
+for ext in "${extensions[@]}"; do
+    test -L "/run/extensions/${ext}.raw"
+done
 
-sudo "${cmd[@]}" refresh
-test -f /usr/bin/tree
+runv sudo "${cmd[@]}" refresh
+for ext in "${extensions[@]}"; do
+    test -f "/usr/bin/${ext}"
+done
 tree > /dev/null
 
-"${cmd[@]}" status
-systemd-sysext status
+runv "${cmd[@]}" status
+runv systemd-sysext status
 
-sudo "${cmd[@]}" remove tree
-sudo "${cmd[@]}" remove htop
-sudo "${cmd[@]}" remove gdb
-test ! -L /run/extensions/tree.raw
-test ! -f /var/lib/extensions.d/tree*.raw
-test ! -f /etc/sysexts-manager/tree.conf
+for ext in "${extensions[@]}"; do
+    runv sudo "${cmd[@]}" remove "${ext}"
+    test ! -L "/run/extensions/${ext}.raw"
+    test ! -f "/var/lib/extensions.d/${ext}"*".raw"
+    test ! -f "/etc/sysexts-manager/${ext}.conf"
+done
 
-"${cmd[@]}" status
+runv "${cmd[@]}" status
 
-sudo "${cmd[@]}" refresh
-tree || echo "command not found as expected"
+runv sudo "${cmd[@]}" refresh
+for ext in "${extensions[@]}"; do
+    test ! -f "/usr/bin/${ext}"
+done
 
-sudo "${cmd[@]}" remove sysexts-manager
-sudo "${cmd[@]}" refresh
+runv sudo "${cmd[@]}" remove sysexts-manager
+runv sudo "${cmd[@]}" refresh
 
-systemd-sysext status
+runv systemd-sysext status
 
 echo "OK"
