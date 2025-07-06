@@ -1,5 +1,8 @@
 all: build-run
 
+lint:
+    cargo fmt && cargo build && cargo clippy
+
 # Direct run, i.e. like cargo run
 build-run *args:
     cargo build
