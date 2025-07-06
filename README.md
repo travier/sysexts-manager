@@ -30,7 +30,7 @@ $ sysexts-manager status
 Install the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
 
 ```
-$ sudo sysexts-manager add tree https://extensions.fcos.fr/extensions/tree
+$ sudo sysexts-manager add tree https://extensions.fcos.fr/extensions
 ```
 
 Update all sysexts managed by sysexts-manager:
@@ -70,6 +70,36 @@ We statically install a copy of the `sysexts-manager` sysext and enable
 `systemd-sysext.service` to run on boot. When systemd loads the
 `sysexts-manager` sysext on boot, it will trigger `sysexts-manager.service`
 which will enable and load all other sysexts on demand.
+
+## Expected layout for hosted sysexts
+
+sysexts-manager expects to find the following layout at the URL used to
+setup a sysext. This layout is intended to match the one defiend in
+[systemd's sysupdate.d](https://www.freedesktop.org/software/systemd/man/latest/sysupdate.d.html).
+Any deviations will be considered a bug.
+
+For the systext `tree`, with the URL configured to
+`https://extensions.fcos.fr/extensions`, sysexts-manager will expect:
+
+```
+.
+└── tree
+    ├── SHA256SUMS
+    ├── tree-2.1.0-6.fc41-41-arm64.raw
+    ├── tree-2.1.0-6.fc41-41-x86-64.raw
+    ├── tree-2.2.1-1.fc42-42-arm64.raw
+    └── tree-2.2.1-1.fc42-42-x86-64.raw
+```
+
+It will thus fetch `https://extensions.fcos.fr/extensions/tree/SHA256SUMS`
+first to get the list of available versions, and then will fetch updates as
+needed.
+
+You can host your own sysexts anywhere that offers access over HTTPS. See the
+[actions](.github/actions) in this repo for an example to build and host your
+own using GitHub releases. See
+[issue#10](https://github.com/travier/sysexts-manager/issues/10) if you are
+interested in turning this into an independent GitHub Action.
 
 ## Why?
 

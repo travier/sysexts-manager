@@ -19,9 +19,9 @@ sudo rm -rf /etc/sysexts-manager/*.conf
 "${cmd[@]}" status
 systemd-sysext status
 
-sudo "${cmd[@]}" add tree https://extensions.fcos.fr/extensions/tree
-sudo "${cmd[@]}" add htop https://extensions.fcos.fr/extensions/htop
-sudo "${cmd[@]}" add gdb  https://extensions.fcos.fr/extensions/gdb
+sudo "${cmd[@]}" add tree https://extensions.fcos.fr/extensions
+sudo "${cmd[@]}" add htop https://extensions.fcos.fr/extensions
+sudo "${cmd[@]}" add gdb  https://extensions.fcos.fr/extensions
 test -f /etc/sysexts-manager/tree.conf
 test -f /etc/sysexts-manager/htop.conf
 test -f /etc/sysexts-manager/gdb.conf

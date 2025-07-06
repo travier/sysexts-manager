@@ -446,11 +446,10 @@ impl Manager {
             "Downloading SHA256SUMS for: {} (version_id: {}, arch: {})",
             config.Name, self.system.version_id, self.system.arch
         );
+        let sha256sum_url = format!("{}/{}/SHA256SUMS", config.Url, config.Name);
+        debug!("Downloading: {sha256sum_url}");
         let client = reqwest::blocking::Client::new();
-        let sha256sums = client
-            .get(format!("{}/SHA256SUMS", config.Url))
-            .send()?
-            .text()?;
+        let sha256sums = client.get(sha256sum_url).send()?.text()?;
         debug!("{sha256sums}");
 
         // Parse images and hashes list from SHA256SUM file
@@ -543,10 +542,9 @@ impl Manager {
         };
 
         println!("Downloading update: {}", download_image.path());
-        debug!("Downloading: {}/{}", config.Url, download_image.path());
-        let mut response = client
-            .get(format!("{}/{}", config.Url, download_image.path()))
-            .send()?;
+        let image_url = format!("{}/{}/{}", config.Url, config.Name, download_image.path());
+        debug!("Downloading: {image_url}");
+        let mut response = client.get(image_url).send()?;
 
         // Setup a temporary file
         let sysext_store = self.rootdir.join(DEFAULT_STORE);
