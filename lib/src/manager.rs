@@ -472,7 +472,7 @@ impl Manager {
                 }
             };
             let Ok(image) = Image::new(&config.Name, filename.clone().into(), Some(hash)) else {
-                error!("Invalid sysext name: {filename}");
+                warn!("Ignoring invalid sysext: {filename}");
                 continue;
             };
             remote_images.push(image);

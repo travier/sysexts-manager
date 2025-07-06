@@ -47,6 +47,13 @@ impl Image {
         };
         let mut filename = filename.to_string();
 
+        if !filename.starts_with(name) {
+            return Err(anyhow!(
+                "sysext image name must start with its own name: {}",
+                filename
+            ));
+        }
+
         if !filename.ends_with(".raw") {
             return Err(anyhow!(
                 "sysext image name must end with the `.raw` extension: {}",
