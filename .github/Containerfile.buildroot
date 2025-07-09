@@ -6,15 +6,12 @@ RUN dnf install -y \
         dnf5-plugins \
         erofs-utils \
         gcc \
+        gh \
         git \
         jq \
         just \
         openssl-devel \
         podman \
         wget \
-    && \
-    dnf config-manager addrepo --from-repofile="https://cli.github.com/packages/rpm/gh-cli.repo" \
-    && \
-    dnf install -y gh --repo gh-cli \
     && \
     dnf clean all
