@@ -2,20 +2,19 @@ use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fmt;
 use std::fs::{self, File, remove_file, rename, symlink_metadata};
-use std::io::{Result as IoResult, Write};
+use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
-use hex;
 use log::{debug, error, info, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
 use rayon::prelude::*;
-use sha2::{Digest, Sha256};
 use version_compare::{Cmp, compare};
 
 use super::sysext::{Config, Image};
+use super::sha256writer::Sha256Writer;
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(non_camel_case_types)]
@@ -58,36 +57,6 @@ const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
 // const DEFAULT_EXTENSIONS: &str = "var/lib/extensions";
 const RUNTIME_EXTENSIONS: &str = "run/extensions";
-
-// https://users.rust-lang.org/t/read-and-hash-sha1-at-the-same-time/54458
-struct Sha256Writer<W> {
-    writer: W,
-    hasher: Sha256,
-}
-
-impl<W> Sha256Writer<W> {
-    fn new(writer: W) -> Self {
-        Sha256Writer {
-            writer,
-            hasher: Sha256::new(),
-        }
-    }
-
-    fn digest(self) -> String {
-        hex::encode(self.hasher.finalize())
-    }
-}
-
-impl<W: Write> Write for Sha256Writer<W> {
-    fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
-        self.hasher.update(buf);
-        self.writer.write(buf)
-    }
-
-    fn flush(&mut self) -> IoResult<()> {
-        self.writer.flush()
-    }
-}
 
 pub fn new() -> Result<Manager> {
     // let dir = cap_std::open_ambient_dir("/")?;
