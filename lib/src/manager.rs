@@ -12,8 +12,9 @@ use os_release::OsRelease;
 use rayon::prelude::*;
 use version_compare::{Cmp, compare};
 
-use super::sysext::{Config, Image};
 use super::arch::Architecture;
+use super::config::Config;
+use super::image::Image;
 use super::sha256writer::Sha256Writer;
 
 pub struct Manager {
