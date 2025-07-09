@@ -95,6 +95,13 @@ It will thus fetch `https://extensions.fcos.fr/extensions/tree/SHA256SUMS`
 first to get the list of available versions, and then will fetch updates as
 needed.
 
+The name of the systexts image must follow the following format:
+`<sysext name>-<sysext version>-<major Fedora release>-<architecture>.raw`.
+
+Currently supported architectures are `x86-64` and `arm64`. The architecture
+names are those used by systemd (see:
+[ConditionArchitecture in `systemd.unit`](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#ConditionArchitecture=)).
+
 You can host your own sysexts anywhere that offers access over HTTPS. See the
 [actions](.github/actions) in this repo for an example to build and host your
 own using GitHub releases. See
