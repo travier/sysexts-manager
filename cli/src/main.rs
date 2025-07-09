@@ -23,8 +23,16 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Setup sysexts symlinks in /run/extensions
-    Symlinks {},
+    /// Enable all sysexts (or only the one specified) by creating symlinks in /run/extensions
+    Enable {
+        /// The sysext to disable
+        name: Option<String>,
+    },
+    /// Disable all sysexts (or only the one specified) by removing symlinks in /run/extensions
+    Disable {
+        /// The sysext to disable
+        name: Option<String>,
+    },
     /// Add configuration for a sysext
     Add {
         /// Name of the sysext
@@ -42,7 +50,7 @@ enum Command {
     },
     /// Update all configured sysexts
     Update {},
-    /// Refresh loaded sysexts
+    /// Refresh enabled sysexts
     Refresh {},
     /// Status of sysexts
     Status {},
@@ -106,7 +114,14 @@ fn main() -> Result<()> {
         .unwrap();
 
     match &cli.command {
-        Command::Symlinks {} => manager.enable(),
+        Command::Enable { name } => match name {
+            None => manager.enable_all(),
+            Some(n) => manager.enable(n),
+        },
+        Command::Disable { name } => match name {
+            None => manager.disable_all(),
+            Some(n) => manager.disable(n),
+        },
         Command::Add { name, url, force } => manager.add_sysext(name, "latest", url, force),
         Command::Remove { name } => manager.remove_sysext(name),
         Command::Update {} => manager.update(),

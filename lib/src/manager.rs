@@ -5,7 +5,7 @@ use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use log::{debug, error, info, warn};
 use os_release::OsRelease;
 // use cap_std::fs::Dir;
@@ -196,9 +196,8 @@ impl Manager {
         Ok(())
     }
 
-    pub fn enable(&self) -> Result<()> {
+    pub fn enable_all(&self) -> Result<()> {
         let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
-
         if !run_extensions.exists() {
             debug!("Creating {}", &run_extensions.display());
             fs::create_dir(&run_extensions)?;
@@ -206,56 +205,84 @@ impl Manager {
         if !fs::metadata(&run_extensions)?.is_dir() {
             return Err(anyhow!("{} is not a directory", &run_extensions.display()));
         }
+        for name in self.configs.keys() {
+            self.enable_one(name, &run_extensions)?;
+        }
+        Ok(())
+    }
 
-        let mut images_to_enable = Vec::new();
+    pub fn enable(&self, name: &String) -> Result<()> {
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        if !run_extensions.exists() {
+            debug!("Creating {}", &run_extensions.display());
+            fs::create_dir(&run_extensions)?;
+        }
+        if !fs::metadata(&run_extensions)?.is_dir() {
+            return Err(anyhow!("{} is not a directory", &run_extensions.display()));
+        }
+        self.enable_one(name, &run_extensions)
+    }
 
-        for (name, config) in &self.configs {
-            let Some(sysext_images) = self.images.get(name) else {
-                error!(
-                    "Config found for '{name}' but no images found. Not setting up. Update first."
-                );
-                continue;
-            };
-            if config.Kind != "latest" {
-                unimplemented!();
-            }
+    /// Enable a sysext: create a symlink in /run/extensions that points to the
+    /// latest image matching the Kind policy (only latest implemented for now)
+    fn enable_one(&self, name: &String, dir: &Path) -> Result<()> {
+        let config = self
+            .configs
+            .get(name)
+            .context(format!("No config found for: {name}"))?;
 
-            match self.find_latest_image(name, sysext_images)? {
-                None => {
-                    error!("No image to enable for sysext: {name}");
-                    continue;
-                }
-                Some(img) => {
-                    debug!("Enabling sysext: {} {}", img.name, img.version);
-                    images_to_enable.push(img);
-                }
-            };
+        if config.Kind != "latest" {
+            unimplemented!();
         }
 
-        if images_to_enable.is_empty() {
-            info!("No sysexts to enable");
+        let images = self.images.get(name).context(format!(
+            "Found config but no images for: {name}. Not setting up. Update first."
+        ))?;
+
+        let image = self
+            .find_latest_image(name, images)?
+            .context(format!("No image to enable for sysext: {name}"))?;
+
+        info!("Enabling sysext: {} ({})", image.name, image.version);
+
+        let original = format!("../../var/lib/extensions.d/{}", image.path());
+        let link = dir.join(format!("{name}.raw"));
+        debug!("{} -> {original}", link.display());
+        if symlink_metadata(&link).is_ok() {
+            remove_file(&link)?
+        };
+        if link.exists() {
+            return Err(anyhow!(
+                "Not overriding an existing file for: {}",
+                link.display()
+            ));
+        };
+        symlink(original, link)?;
+        println!("Enabled sysext: {name}");
+        Ok(())
+    }
+
+    pub fn disable_all(&self) -> Result<()> {
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        for name in self.configs.keys() {
+            self.disable_one(name, &run_extensions)?;
+        }
+        Ok(())
+    }
+
+    pub fn disable(&self, name: &String) -> Result<()> {
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        self.disable_one(name, &run_extensions)
+    }
+
+    pub fn disable_one(&self, name: &String, dir: &Path) -> Result<()> {
+        let sysext = dir.join(format!("{name}.raw"));
+        if !sysext.exists() {
+            debug!("sysext already disabled: {}", &sysext.display());
             return Ok(());
         }
-        info!(
-            "Enabling sysexts: {}",
-            images_to_enable
-                .iter()
-                .map(|image| format!("{} ({})", image.name, image.version))
-                .collect::<Vec<String>>()
-                .join(", ")
-        );
-
-        for image in images_to_enable {
-            // Setup symlinks in /run/extensions.version for the sysexts found
-            let original = format!("../../var/lib/extensions.d/{}", image.path());
-            let link = format!("{}/{}.raw", run_extensions.display(), image.name);
-            debug!("{link} -> {original}");
-            if symlink_metadata(&link).is_ok() {
-                remove_file(&link)?
-            };
-            symlink(original, link)?;
-        }
-
+        remove_file(&sysext)?;
+        println!("Disabled sysext: {name}");
         Ok(())
     }
 
@@ -342,23 +369,15 @@ impl Manager {
             }
             Some(_c) => {}
         };
-        self.configs.remove(name);
 
-        // Remove enablement symlink if it exists
-        let runtimedir = self.rootdir.join(RUNTIME_EXTENSIONS);
-        let imagelink = runtimedir.join(format!("{name}.raw"));
-        if imagelink.exists() {
-            info!("Removing symlink: {}", imagelink.display());
-            remove_file(&imagelink)?;
+        let symlink = self
+            .rootdir
+            .join(RUNTIME_EXTENSIONS)
+            .join(format!("{name}.raw"));
+        if symlink.exists() {
+            info!("Found symlink: {}", symlink.display());
+            return Err(anyhow!("Not removing currently enabled sysext: {name}"));
         }
-
-        // Remove image or symlink from /var/lib/extensions if it exists
-        // let extensionsdir = self.rootdir.join(DEFAULT_EXTENSIONS);
-        // let imagelink = extensionsdir.join(format!("{name}.raw"));
-        // if imagelink.exists() {
-        //     info!("Removing image: {}", imagelink.display());
-        //     remove_file(&imagelink)?;
-        // }
 
         match self.images.get(name) {
             None => {
@@ -376,18 +395,19 @@ impl Manager {
                     info!("Removing sysext image: {}", path.display());
                     remove_file(&path)?
                 }
+                self.images.remove(name);
             }
         };
 
         // Try removing the config from /run and /etc, ignore /usr
         for dir in MUTABLE_CONFIGURATION_DIRECTORIES {
-            let configdir = self.rootdir.join(dir);
-            let conffile = configdir.join(format!("{name}.conf"));
-            if conffile.exists() {
-                info!("Removing sysext config: {}", conffile.display());
-                remove_file(&conffile)?;
+            let conf = self.rootdir.join(dir).join(format!("{name}.conf"));
+            if conf.exists() {
+                info!("Removing sysext config: {}", conf.display());
+                remove_file(&conf)?;
             }
         }
+        self.configs.remove(name);
 
         println!("Removed configuration and images for sysext: {name}");
 

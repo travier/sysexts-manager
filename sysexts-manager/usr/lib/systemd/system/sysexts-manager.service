@@ -8,5 +8,5 @@ After=systemd-sysext.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/sysexts-manager symlinks
+ExecStart=/usr/bin/sysexts-manager enable
 ExecStart=/usr/bin/sysexts-manager refresh

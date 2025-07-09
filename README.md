@@ -39,10 +39,10 @@ Update all sysexts managed by sysexts-manager:
 sudo sysexts-manager update
 ```
 
-Create temporary symlinks in `/run/extensions`:
+Enable the sysext by creating temporary symlinks in `/run/extensions`:
 
 ```bash
-sudo sysexts-manager symlinks
+sudo sysexts-manager enable tree
 ```
 
 Ask systemd to refresh enabled sysexts:
@@ -55,6 +55,12 @@ List all sysexts managed by sysexts-manager:
 
 ```bash
 sysexts-manager status
+```
+
+Disable the tree sysext:
+
+```bash
+sudo sysexts-manager disable tree
 ```
 
 Remove the tree sysext and all installed images:
