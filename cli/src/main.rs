@@ -1,5 +1,6 @@
-use std::process;
 use std::result::Result::Ok;
+use std::time::Duration;
+use std::{process, thread::sleep};
 
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
@@ -58,7 +59,7 @@ fn refresh() -> Result<()> {
     debug!("Asking systemd-sysusers to refresh enabled sysexts");
     let mut cmd = process::Command::new("systemctl");
     cmd.args(["restart", "systemd-sysext.service"]);
-    match cmd.status() {
+    let res = match cmd.status() {
         Ok(s) => {
             if !s.success() {
                 Err(anyhow!("Failed to refresh sysexts"))
@@ -68,7 +69,10 @@ fn refresh() -> Result<()> {
             }
         }
         Err(_e) => Err(anyhow!("Failed to refresh sysexts")),
-    }
+    };
+    // FIXME
+    sleep(Duration::new(1, 0));
+    res
 }
 
 fn main() -> Result<()> {
