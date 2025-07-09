@@ -25,6 +25,11 @@ test-remote *args: sysext
     scp ./test-data/basic-test.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./basic-test.sh {{args}}
 
+# Stress test download of a larger set of sysexts on a remote host
+test-remote-stress *args: sysext
+    scp ./test-data/parallel-downloads.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    ssh fcos-next ./parallel-downloads.sh {{args}}
+
 # Run on a remote host
 build-run-remote *args:
     cargo build
