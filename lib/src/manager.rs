@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::env::consts::ARCH;
-use std::fmt;
 use std::fs::{self, File, remove_file, rename, symlink_metadata};
 use std::io::Write;
 use std::os::unix::fs::symlink;
@@ -14,24 +13,8 @@ use rayon::prelude::*;
 use version_compare::{Cmp, compare};
 
 use super::sysext::{Config, Image};
+use super::arch::Architecture;
 use super::sha256writer::Sha256Writer;
-
-#[derive(Debug, Clone, PartialEq)]
-#[allow(non_camel_case_types)]
-pub enum Architecture {
-    x86_64,
-    aarch64,
-}
-
-impl fmt::Display for Architecture {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = match self {
-            Architecture::x86_64 => "x86_64",
-            Architecture::aarch64 => "aarch64",
-        };
-        write!(f, "{s}")
-    }
-}
 
 pub struct Manager {
     system: System,

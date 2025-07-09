@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use toml;
 use version_compare::Version;
 
-use super::manager::Architecture;
+use super::arch::Architecture;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[allow(non_snake_case, dead_code)]
