@@ -17,17 +17,17 @@ sysext:
 
 # Build and deploy sysext in remote host
 sysext-remote: sysext
-    scp ./sysexts-manager/sysexts-manager-*.raw fcos-next:
-    ssh fcos-next "sudo mv sysexts-manager-*.raw /var/lib/extensions/sysexts-manager.raw && sudo systemctl restart systemd-sysext"
+    scp ./tests/setup.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    ssh fcos-next ./setup.sh
 
 # Basic functionnality test on a remote host
 test-remote *args: sysext
-    scp ./test-data/basic-test.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    scp ./tests/{setup,basic-test}.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./basic-test.sh {{args}}
 
 # Stress test download of a larger set of sysexts on a remote host
 test-remote-stress *args: sysext
-    scp ./test-data/parallel-downloads.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
+    scp ./tests/{setup,parallel-downloads}.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./parallel-downloads.sh {{args}}
 
 # Run on a remote host
