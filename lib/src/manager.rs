@@ -29,18 +29,18 @@ struct System {
     version_id: String,
 }
 
-const CONFIGURATION_DIRECTORIES: &[&str] = &[
+const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
+const MUTABLE_CONFIG_DIRS: &[&str] = &["run/sysexts-manager", "etc/sysexts-manager"];
+const ALL_CONFIG_DIRS: &[&str] = &[
     "run/sysexts-manager",
     "etc/sysexts-manager",
     "usr/lib/sysexts-manager",
 ];
 
-const MUTABLE_CONFIGURATION_DIRECTORIES: &[&str] = &["run/sysexts-manager", "etc/sysexts-manager"];
+const RUNTIME_EXTENSIONS_DIR: &str = "run/extensions";
+// const PERMANENT_EXTENSIONS_DIR: &str = "var/lib/extensions";
 
-const DEFAULT_CONFIG_DIR: &str = "etc/sysexts-manager";
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
-// const DEFAULT_EXTENSIONS: &str = "var/lib/extensions";
-const RUNTIME_EXTENSIONS: &str = "run/extensions";
 
 pub fn new() -> Result<Manager> {
     // let dir = cap_std::open_ambient_dir("/")?;
@@ -78,7 +78,7 @@ pub fn new_with_root(path: &Path) -> Result<Manager> {
 
 impl Manager {
     pub fn load_config(&mut self) -> Result<()> {
-        for dir in CONFIGURATION_DIRECTORIES {
+        for dir in ALL_CONFIG_DIRS {
             let configdir = self.rootdir.join(dir);
             debug!("Looking for configuration in: {}", configdir.display());
             let Ok(files) = fs::read_dir(&configdir) else {
@@ -197,7 +197,7 @@ impl Manager {
     }
 
     pub fn enable_all(&self) -> Result<()> {
-        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS_DIR);
         if !run_extensions.exists() {
             debug!("Creating {}", &run_extensions.display());
             fs::create_dir(&run_extensions)?;
@@ -212,7 +212,7 @@ impl Manager {
     }
 
     pub fn enable(&self, name: &String) -> Result<()> {
-        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS_DIR);
         if !run_extensions.exists() {
             debug!("Creating {}", &run_extensions.display());
             fs::create_dir(&run_extensions)?;
@@ -263,7 +263,7 @@ impl Manager {
     }
 
     pub fn disable_all(&self) -> Result<()> {
-        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS_DIR);
         for name in self.configs.keys() {
             self.disable_one(name, &run_extensions)?;
         }
@@ -271,7 +271,7 @@ impl Manager {
     }
 
     pub fn disable(&self, name: &String) -> Result<()> {
-        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS);
+        let run_extensions = self.rootdir.join(RUNTIME_EXTENSIONS_DIR);
         self.disable_one(name, &run_extensions)
     }
 
@@ -372,7 +372,7 @@ impl Manager {
 
         let symlink = self
             .rootdir
-            .join(RUNTIME_EXTENSIONS)
+            .join(RUNTIME_EXTENSIONS_DIR)
             .join(format!("{name}.raw"));
         if symlink.exists() {
             info!("Found symlink: {}", symlink.display());
@@ -400,7 +400,7 @@ impl Manager {
         };
 
         // Try removing the config from /run and /etc, ignore /usr
-        for dir in MUTABLE_CONFIGURATION_DIRECTORIES {
+        for dir in MUTABLE_CONFIG_DIRS {
             let conf = self.rootdir.join(dir).join(format!("{name}.conf"));
             if conf.exists() {
                 info!("Removing sysext config: {}", conf.display());
@@ -496,7 +496,7 @@ impl Manager {
                     }
                     Ok(Cmp::Eq) => {
                         println!("No update found for '{}'", img.name);
-                        // TODO: Compute local image SHA256SUM, compare it and warn
+                        // TODO: Compute local image SHA256SUM, compare it and warn if different
                         return Ok(());
                     }
                     Ok(Cmp::Gt) => {

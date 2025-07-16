@@ -23,14 +23,14 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Enable all sysexts (or only the one specified) by creating symlinks in /run/extensions
+    /// Enable all sysexts, or only one if specified
     Enable {
-        /// The sysext to disable
+        /// The sysext to enable instead of operating on all sysexts
         name: Option<String>,
     },
-    /// Disable all sysexts (or only the one specified) by removing symlinks in /run/extensions
+    /// Disable all sysexts, or only one if specified
     Disable {
-        /// The sysext to disable
+        /// The sysext to disable instead of operating on all sysexts
         name: Option<String>,
     },
     /// Add configuration for a sysext
