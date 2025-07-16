@@ -39,6 +39,7 @@ const ALL_CONFIG_DIRS: &[&str] = &[
 
 const RUNTIME_EXTENSIONS_DIR: &str = "run/extensions";
 // const PERMANENT_EXTENSIONS_DIR: &str = "var/lib/extensions";
+const ALL_EXTENSIONS_DIRS: &[&str] = &["run/extensions", "etc/extensions", "var/lib/extensions"];
 
 const DEFAULT_STORE: &str = "var/lib/extensions.d";
 
@@ -370,13 +371,12 @@ impl Manager {
             Some(_c) => {}
         };
 
-        let symlink = self
-            .rootdir
-            .join(RUNTIME_EXTENSIONS_DIR)
-            .join(format!("{name}.raw"));
-        if symlink.exists() {
-            info!("Found symlink: {}", symlink.display());
-            return Err(anyhow!("Not removing currently enabled sysext: {name}"));
+        for dir in ALL_EXTENSIONS_DIRS {
+            let symlink = self.rootdir.join(dir).join(format!("{name}.raw"));
+            if symlink.exists() {
+                info!("Found symlink: {}", symlink.display());
+                return Err(anyhow!("Not removing currently enabled sysext: {name}"));
+            }
         }
 
         match self.images.get(name) {
