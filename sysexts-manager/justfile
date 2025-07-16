@@ -14,4 +14,4 @@ all: default
 
 # Will be set in CI
 version:
-    echo "0.2.0" > ./version
+    echo "0.3.0" > ./version
