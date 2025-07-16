@@ -16,12 +16,12 @@ sudo rm -rf "/run/extensions"
 sudo rm -rf "/var/lib/extensions"
 sudo rm -rf "/var/lib/extensions.d"
 
-# Install sysexts-manager sysext manually
-sudo install -d -m 0755 -o 0 -g 0 "/var/lib/extensions.d" "/run/extensions"
+# Install the sysexts-manager sysext manually and statically enable it
+sudo install -d -m 0755 -o 0 -g 0 "/var/lib/extensions"{,.d} "/run/extensions"
 sysext="$(ls sysexts-manager-*.raw)"
 sudo mv "${sysext}" "/var/lib/extensions.d"
-sudo ln -snf "/var/lib/extensions.d/${sysext}" "/run/extensions/sysexts-manager.raw"
-sudo restorecon -RFv "/var/lib/extensions.d" "/run/extensions" > /dev/null
+sudo ln -snf "/var/lib/extensions.d/${sysext}" "/var/lib/extensions/sysexts-manager.raw"
+sudo restorecon -RFv "/var/lib/extensions"{,.d} "/run/extensions" > /dev/null
 sudo systemctl enable systemd-sysext.service
 sudo systemctl restart systemd-sysext.service
 sleep 1 # FIXME: Workaround for restart not waiting for completion

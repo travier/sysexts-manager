@@ -12,11 +12,11 @@ VERSION_ID="42" # Fedora release
 ARCH="x86-64"   # or arm64
 URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
 NAME="sysexts-manager-${VERSION}-${VERSION_ID}-${ARCH}.raw"
-sudo install -d -m 0755 -o 0 -g 0 /var/lib/extensions /run/extensions
+sudo install -d -m 0755 -o 0 -g 0 "/var/lib/extensions"{,.d} "/run/extensions"
 curl --silent --fail --location "${URL}/${NAME}" \
     | sudo bash -c "cat > /var/lib/extensions.d/${NAME}"
-ln -snf "/var/lib/extensions.d/${NAME}" "/run/extensions/sysexts-manager.raw"
-sudo restorecon -RFv /var/lib/extensions /run/extensions
+ln -snf "/var/lib/extensions.d/${NAME}" "/var/lib/extensions/sysexts-manager.raw"
+sudo restorecon -RFv "/var/lib/extensions"{,.d} "/run/extensions"
 sudo systemctl enable systemd-sysext.service
 sudo systemctl restart systemd-sysext.service
 ```

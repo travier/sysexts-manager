@@ -86,6 +86,9 @@ runv "${cmd[@]}" status
 #     test ! -f "/usr/bin/${ext}"
 # done
 
+# Manually remove the persistent symlink for now
+sudo rm "/var/lib/extensions/sysexts-manager.raw"
+
 runv sudo "${cmd[@]}" disable sysexts-manager
 runv sudo "${cmd[@]}" remove sysexts-manager
 test ! -f "/var/lib/extensions.d/sysexts-manager"*".raw"
