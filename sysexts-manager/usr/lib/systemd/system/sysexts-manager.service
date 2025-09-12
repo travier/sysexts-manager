@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+# SPDX-License-Identifier: CC0-1.0
 [Unit]
 Description=Setup ephemeral sysexts symlinks with sysexts-manager
 ConditionPathExists=/var/lib/extensions.d

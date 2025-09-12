@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+# SPDX-License-Identifier: CC0-1.0
+
+# Build and run
 all: build-run
 
 lint:

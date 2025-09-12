@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+// SPDX-License-Identifier: MIT
+
 use std::result::Result::Ok;
 use std::time::Duration;
 use std::{process, thread::sleep};

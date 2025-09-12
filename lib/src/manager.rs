@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+// SPDX-License-Identifier: MIT
+
 use std::collections::HashMap;
 use std::env::consts::ARCH;
 use std::fs::{self, File, remove_file, rename, symlink_metadata};

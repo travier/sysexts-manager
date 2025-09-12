@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+// SPDX-License-Identifier: MIT
+
 use std::fs::{read_link, remove_file};
 use std::path::{Path, PathBuf};
 

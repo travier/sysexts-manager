@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+// SPDX-License-Identifier: MIT
+
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
