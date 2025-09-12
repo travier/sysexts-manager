@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
+// SPDX-License-Identifier: MIT
+
 use sha2::{Digest, Sha256};
 use std::io::{Result as IoResult, Write};
 

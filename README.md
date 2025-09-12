@@ -148,4 +148,4 @@ are prototyping the interface and usage here.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSES/MIT.txt).

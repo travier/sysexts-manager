@@ -1,0 +1,12 @@
+version = 1
+
+[[annotations]]
+path = [
+  "README.md",
+  "TODO.md",
+  "Cargo.lock",
+  "lib/test-data/**",
+  "sysexts-manager/usr/lib/sysexts-manager/sysexts-manager.conf"
+]
+SPDX-FileCopyrightText = "Timothée Ravier <tim@siosm.fr>"
+SPDX-License-Identifier = "CC0-1.0"
