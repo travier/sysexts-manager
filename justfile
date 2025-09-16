@@ -24,7 +24,7 @@ sysext-remote: sysext
     scp ./tests/setup.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./setup.sh
 
-# Basic functionnality test on a remote host
+# Basic functionality test on a remote host
 test-remote *args: sysext
     scp ./tests/{setup,basic-test}.sh ./sysexts-manager/sysexts-manager-*.raw fcos-next:
     ssh fcos-next ./basic-test.sh {{args}}
