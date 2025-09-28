@@ -146,6 +146,6 @@ In the future, this should be integrated into bootc directly (see
 [bootc#7](https://github.com/bootc-dev/bootc/issues/7)). In the meantime, we
 are prototyping the interface and usage here.
 
-## License
+## Licenses
 
-[MIT](LICENSES/MIT.txt).
+See: [LICENSES](LICENSES).
