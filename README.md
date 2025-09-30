@@ -2,6 +2,8 @@
 
 Work in progress manager for systemd system extensions (sysexts).
 
+See the [demo for v0.3.0](https://asciinema.org/a/745601).
+
 ## How to use
 
 Install the `sysexts-manager` pre-built sysext:
