@@ -4,90 +4,98 @@
 use std::fs::{read_link, remove_file};
 use std::path::{Path, PathBuf};
 
-fn cleanup(f: &Path, sysexts: &Vec<&'static str>) {
+fn cleanup(root: &Path, sysexts: &Vec<&'static str>) {
     for s in sysexts {
-        let run_sysexts = f.join("run/extensions").join(format!("{s}.raw"));
+        let run_sysexts = root.join("run/extensions").join(format!("{s}.raw"));
         let _ = remove_file(&run_sysexts);
         assert!(!run_sysexts.exists());
     }
 }
 
-#[test]
-fn basic_latest_version() {
-    let f = Path::new("./test-data/basic_latest_version");
-
-    let sysexts = vec!["foo", "test"];
-
-    cleanup(f, &sysexts);
-
-    let mut manager = sysexts_manager_lib::manager::new_with_root(f).unwrap();
+fn enable_all(root: &Path) {
+    let mut manager = sysexts_manager_lib::manager::new_with_root(root).unwrap();
     manager.load_config().unwrap();
     manager.load_images().unwrap();
     manager.enable_all().unwrap();
-
-    for s in &sysexts {
-        let run_sysexts = f.join("run/extensions").join(format!("{s}.raw"));
-        assert!(run_sysexts.exists());
-    }
-    assert_eq!(
-        read_link(f.join("run/extensions/foo.raw")).unwrap(),
-        PathBuf::from("../../var/lib/extensions.d/foo-1.4-42-x86-64.raw")
-    );
-    assert_eq!(
-        read_link(f.join("run/extensions/test.raw")).unwrap(),
-        PathBuf::from("../../var/lib/extensions.d/test-20250330-42-x86-64.raw")
-    );
-
-    cleanup(f, &sysexts);
 }
 
-#[test]
-fn basic_multiple_release() {
-    let f = Path::new("./test-data/basic_multiple_release");
-
-    let sysexts = vec!["foo", "test"];
-
-    cleanup(f, &sysexts);
-
-    let mut manager = sysexts_manager_lib::manager::new_with_root(f).unwrap();
-    manager.load_config().unwrap();
-    manager.load_images().unwrap();
-    manager.enable_all().unwrap();
-
-    for s in &sysexts {
-        let run_sysexts = f.join("run/extensions").join(format!("{s}.raw"));
-        assert!(run_sysexts.exists());
-    }
-    assert_eq!(
-        read_link(f.join("run/extensions/foo.raw")).unwrap(),
-        PathBuf::from("../../var/lib/extensions.d/foo-20250205-42-x86-64.raw")
-    );
-    assert_eq!(
-        read_link(f.join("run/extensions/test.raw")).unwrap(),
-        PathBuf::from("../../var/lib/extensions.d/test-20250330-42-x86-64.raw")
-    );
-
-    cleanup(f, &sysexts);
-}
-
-#[test]
-fn no_valid_sysext() {
-    let f = Path::new("./test-data/no_valid_sysext");
-
-    let sysexts = vec!["foo", "test"];
-
-    cleanup(f, &sysexts);
-
-    let mut manager = sysexts_manager_lib::manager::new_with_root(f).unwrap();
+fn enable_all_err(root: &Path) {
+    let mut manager = sysexts_manager_lib::manager::new_with_root(root).unwrap();
     manager.load_config().unwrap();
     manager.load_images().unwrap();
     assert!(manager.enable_all().is_err());
+}
 
-    for s in &sysexts {
-        let _run_sysexts = f.join("run/extensions").join(format!("{s}.raw"));
-        // FIXME
-        // assert!(!run_sysexts.exists());
-    }
+fn validate_symlink(root: &Path, name: &str, dest: &str) {
+    let run_sysexts = root.join("run/extensions").join(format!("{name}.raw"));
+    assert!(run_sysexts.exists());
+    assert_eq!(
+        read_link(run_sysexts).unwrap(),
+        PathBuf::from(format!("../../var/lib/extensions.d/{dest}.raw"))
+    );
+}
 
-    cleanup(f, &sysexts);
+fn validate_no_symlink(root: &Path, name: &str) {
+    let run_sysexts = root.join("run/extensions").join(format!("{name}.raw"));
+    assert!(!run_sysexts.exists());
+}
+
+#[test]
+fn valid_version_latest() {
+    let root = Path::new("./test-data/valid_version_latest");
+    let sysexts = vec!["foo", "bar", "duck"];
+    cleanup(root, &sysexts);
+    enable_all(root);
+    validate_symlink(root, "foo", "foo-3-43-x86-64");
+    validate_symlink(root, "bar", "bar-20251120-43-x86-64");
+    validate_symlink(root, "duck", "duck-1.6.5-43-x86-64");
+    cleanup(root, &sysexts);
+}
+
+#[test]
+fn valid_current_release() {
+    let root = Path::new("./test-data/valid_current_release");
+    let sysexts = vec!["foo", "bar", "duck"];
+    cleanup(root, &sysexts);
+    enable_all(root);
+    validate_symlink(root, "foo", "foo-3-43-x86-64");
+    validate_symlink(root, "bar", "bar-20251120-43-x86-64");
+    validate_symlink(root, "duck", "duck-1.6.5-43-x86-64");
+    cleanup(root, &sysexts);
+}
+
+#[test]
+fn valid_current_arch() {
+    let root = Path::new("./test-data/valid_current_arch");
+    let sysexts = vec!["foo", "bar", "duck"];
+    cleanup(root, &sysexts);
+    enable_all(root);
+    validate_symlink(root, "foo", "foo-3-43-x86-64");
+    validate_symlink(root, "bar", "bar-20251120-43-x86-64");
+    validate_symlink(root, "duck", "duck-1.6.5-43-x86-64");
+    cleanup(root, &sysexts);
+}
+
+#[test]
+fn invalid_arch() {
+    let root = Path::new("./test-data/invalid_arch");
+    let sysexts = vec!["foo", "bar", "duck"];
+    cleanup(root, &sysexts);
+    enable_all_err(root);
+    validate_no_symlink(root, "foo");
+    validate_no_symlink(root, "bar");
+    validate_no_symlink(root, "duck");
+    cleanup(root, &sysexts);
+}
+
+#[test]
+fn invalid_release() {
+    let root = Path::new("./test-data/invalid_arch");
+    let sysexts = vec!["foo", "bar", "duck"];
+    cleanup(root, &sysexts);
+    enable_all_err(root);
+    validate_no_symlink(root, "foo");
+    validate_no_symlink(root, "bar");
+    validate_no_symlink(root, "duck");
+    cleanup(root, &sysexts);
 }

@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
 // SPDX-License-Identifier: MIT
 
+use std::num::NonZero;
+use std::path::PathBuf;
 use std::result::Result::Ok;
+use std::thread::available_parallelism;
 use std::time::Duration;
 use std::{process, thread::sleep};
 
@@ -12,13 +15,17 @@ use log::{LevelFilter, debug};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = "systemd system extension manager")]
 struct Cli {
-    /// Log verbosity. Defaults to Warn, -v for Info, -vv for Debug, -vvv for Trace
+    /// Log verbosity. Defaults to Warn, -v for Info, -vv for Debug, -vvv for Trace.
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
 
-    /// How many threads will be used for parallel operations such as image downloads
-    #[arg(short = 'j', long, global = true, default_value_t = 3)]
+    /// How many threads will be used for parallel operations such as image downloads. Defaults to two times the number of CPU threads.
+    #[arg(short = 'j', long, global = true, default_value_t = 0)]
     jobs: u8,
+
+    /// Takes a directory path as an argument. All paths will be prefixed with the given alternate root path, including config search paths.
+    #[arg(long, global = true)]
+    root: Option<String>,
 
     #[command(subcommand)]
     command: Command,
@@ -101,7 +108,13 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let mut manager = sysexts_manager_lib::manager::new()?;
+    let mut manager = match cli.root {
+        None => sysexts_manager_lib::manager::new()?,
+        Some(p) => {
+            let p = PathBuf::from(p);
+            sysexts_manager_lib::manager::new_with_root(&p)?
+        }
+    };
     manager.load_config()?;
     manager.load_images()?;
 
@@ -110,9 +123,16 @@ fn main() -> Result<()> {
     // find current release (version_id) & architecture & variant (?) to filter sysexts
     // ostree::rpm_ostree_status()?;
 
-    // Default to updating and downloading a maximum of 3 sysext images in parallel
+    let jobs = if cli.jobs == 0 {
+        available_parallelism()
+            .unwrap_or(NonZero::new(1).unwrap())
+            .get()
+            * 2
+    } else {
+        cli.jobs.into()
+    };
     rayon::ThreadPoolBuilder::new()
-        .num_threads(cli.jobs.into())
+        .num_threads(jobs)
         .build_global()
         .unwrap();
 

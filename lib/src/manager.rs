@@ -67,7 +67,7 @@ pub fn new_with_root(path: &Path) -> Result<Manager> {
         }
     };
 
-    let release = OsRelease::new()?;
+    let release = OsRelease::new_from(path.join("etc/os-release"))?;
     let version_id = release.version_id;
 
     debug!("Found arch: {arch} | version_id: {version_id}");
