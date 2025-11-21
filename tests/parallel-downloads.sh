@@ -13,7 +13,6 @@ extensions=(
     'btop'
     'bwm-ng'
     'cilium-cli'
-    'cloud-hypervisor'
     'distrobox'
     'emacs'
     'erofs-utils'
