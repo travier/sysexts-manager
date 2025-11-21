@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 use std::num::NonZero;
+use std::path::PathBuf;
 use std::result::Result::Ok;
 use std::thread::available_parallelism;
 use std::time::Duration;
@@ -21,6 +22,10 @@ struct Cli {
     /// How many threads will be used for parallel operations such as image downloads. Defaults to two times the number of CPU threads.
     #[arg(short = 'j', long, global = true, default_value_t = 0)]
     jobs: u8,
+
+    /// Takes a directory path as an argument. All paths will be prefixed with the given alternate root path, including config search paths.
+    #[arg(long, global = true)]
+    root: Option<String>,
 
     #[command(subcommand)]
     command: Command,
@@ -103,7 +108,13 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let mut manager = sysexts_manager_lib::manager::new()?;
+    let mut manager = match cli.root {
+        None => sysexts_manager_lib::manager::new()?,
+        Some(p) => {
+            let p = PathBuf::from(p);
+            sysexts_manager_lib::manager::new_with_root(&p)?
+        }
+    };
     manager.load_config()?;
     manager.load_images()?;
 
