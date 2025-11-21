@@ -18,7 +18,7 @@ sysext:
     cargo build --release
     mkdir -p sysexts-manager/usr/bin
     cp target/release/sysexts-manager sysexts-manager/usr/bin
-    cd sysexts-manager && just build quay.io/fedora-ostree-desktops/base-atomic:42
+    cd sysexts-manager && just build quay.io/fedora-ostree-desktops/base-atomic:43
 
 # Build and deploy sysext in remote host
 sysext-remote: sysext
