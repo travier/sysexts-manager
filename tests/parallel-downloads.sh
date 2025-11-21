@@ -9,10 +9,8 @@ set -euo pipefail
 source ./setup.sh
 
 extensions=(
-    'bandwhich'
     'btop'
     'bwm-ng'
-    'cilium-cli'
     'distrobox'
     'emacs'
     'erofs-utils'
@@ -22,7 +20,6 @@ extensions=(
     'git-absorb'
     'git-delta'
     'git-lfs'
-    'glab'
     'helix'
     'htop'
     'iotop'
@@ -35,8 +32,6 @@ extensions=(
     'tmux'
     'tree'
     'vim'
-    'virtctl'
-    'youki'
     'zoxide'
     'zsh'
 )
@@ -45,7 +40,7 @@ runv "${cmd[@]}" status
 runv systemd-sysext status
 
 for ext in "${extensions[@]}"; do
-    runv sudo "${cmd[@]}" add "${ext}" "https://extensions.fcos.fr/extensions"
+    runv sudo "${cmd[@]}" add "${ext}" "https://extensions.fcos.fr/fedora"
     test -f "/etc/sysexts-manager/${ext}.conf"
 done
 
