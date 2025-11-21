@@ -10,7 +10,7 @@ Install the `sysexts-manager` pre-built sysext:
 
 ```bash
 VERSION="0.3.1" # sysexts-manager version
-VERSION_ID="42" # Fedora release
+VERSION_ID="43" # Fedora release
 ARCH="x86-64"   # or arm64
 URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
 NAME="sysexts-manager-${VERSION}-${VERSION_ID}-${ARCH}.raw"
