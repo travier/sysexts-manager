@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
 // SPDX-License-Identifier: MIT
 
+use std::num::NonZero;
 use std::result::Result::Ok;
+use std::thread::available_parallelism;
 use std::time::Duration;
 use std::{process, thread::sleep};
 
@@ -16,8 +18,8 @@ struct Cli {
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
 
-    /// How many threads will be used for parallel operations such as image downloads
-    #[arg(short = 'j', long, global = true, default_value_t = 3)]
+    /// How many threads will be used for parallel operations such as image downloads. Defaults to two times the number of CPU threads.
+    #[arg(short = 'j', long, global = true, default_value_t = 0)]
     jobs: u8,
 
     #[command(subcommand)]
@@ -110,9 +112,16 @@ fn main() -> Result<()> {
     // find current release (version_id) & architecture & variant (?) to filter sysexts
     // ostree::rpm_ostree_status()?;
 
-    // Default to updating and downloading a maximum of 3 sysext images in parallel
+    let jobs = if cli.jobs == 0 {
+        available_parallelism()
+            .unwrap_or(NonZero::new(1).unwrap())
+            .get()
+            * 2
+    } else {
+        cli.jobs.into()
+    };
     rayon::ThreadPoolBuilder::new()
-        .num_threads(cli.jobs.into())
+        .num_threads(jobs)
         .build_global()
         .unwrap();
 
