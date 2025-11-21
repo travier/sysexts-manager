@@ -4,6 +4,7 @@
 # Build and run
 all: build-run
 
+# Auto re-format and run clippy
 lint:
     cargo fmt && cargo build && cargo clippy
 
