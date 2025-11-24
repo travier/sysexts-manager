@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Build container image
         uses: redhat-actions/buildah-build@v2
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Build container image
         uses: redhat-actions/buildah-build@v2

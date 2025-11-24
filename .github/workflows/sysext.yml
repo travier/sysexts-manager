@@ -39,7 +39,7 @@ jobs:
       IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: "Mark directory as safe"
         run: |
@@ -71,7 +71,7 @@ jobs:
       IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: "Mark directory as safe"
         run: |
@@ -101,7 +101,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: "Mark directory as safe"
         run: |
