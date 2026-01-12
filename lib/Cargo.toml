@@ -17,9 +17,9 @@ log = "0.4.29"
 os-release = "0.1.0"
 reqwest = { version = "0.13.1", features = ["blocking","native-tls"] }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.148"
+serde_json = "1.0.149"
 hex = "0.4.3"
 sha2 = "0.10.9"
-toml = "0.9.10"
+toml = "0.9.11"
 version-compare = "0.2.0"
 rayon = "1.11.0"
