@@ -31,7 +31,7 @@ sysexts-manager status
 
 Sysexts are divided into two repositories:
 
-  * **Official Fedora RPM based sysexts** are hosted at https://extensions.fcos.fr/fedora
+  * **Fedora RPM based sysexts** are hosted at https://extensions.fcos.fr/fedora
   * **Community sourced sysexts** are hosted at https://extensions.fcos.fr/community
 
 Install the tree sysext from `https://extensions.fcos.fr/fedora`:
@@ -40,7 +40,7 @@ Install the tree sysext from `https://extensions.fcos.fr/fedora`:
 sudo sysexts-manager add tree https://extensions.fcos.fr/fedora
 ```
 
-(Note: To install a community package, simply replace the base URL in the command above with `https://extensions.fcos.fr/community`)
+(Note: To install a community package, replace the base URL in the command above with `https://extensions.fcos.fr/community`)
 
 Update all sysexts managed by sysexts-manager:
 
