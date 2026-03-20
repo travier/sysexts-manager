@@ -29,11 +29,18 @@ As `sysexts-manager` is a sysext, it is capable of managing itself:
 sysexts-manager status
 ```
 
-Install the tree sysext from [extensions.fcos.fr](https://extensions.fcos.fr):
+Sysexts are divided into two repositories:
+
+  * **Official Fedora RPM based sysexts** are hosted at https://extensions.fcos.fr/fedora
+  * **Community sourced sysexts** are hosted at https://extensions.fcos.fr/community
+
+Install the tree sysext from `https://extensions.fcos.fr/fedora`:
 
 ```bash
-sudo sysexts-manager add tree https://extensions.fcos.fr/extensions
+sudo sysexts-manager add tree https://extensions.fcos.fr/fedora
 ```
+
+(Note: To install a community package, simply replace the base URL in the command above with `https://extensions.fcos.fr/community`)
 
 Update all sysexts managed by sysexts-manager:
 
@@ -87,7 +94,7 @@ setup a sysext. This layout is intended to match the one defiend in
 Any deviations will be considered a bug.
 
 For the systext `tree`, with the URL configured to
-`https://extensions.fcos.fr/extensions`, sysexts-manager will expect:
+`https://extensions.fcos.fr/fedora`, sysexts-manager will expect:
 
 ```
 .
@@ -99,7 +106,7 @@ For the systext `tree`, with the URL configured to
     └── tree-2.2.1-1.fc42-42-x86-64.raw
 ```
 
-It will thus fetch `https://extensions.fcos.fr/extensions/tree/SHA256SUMS`
+It will thus fetch `https://extensions.fcos.fr/fedora/tree/SHA256SUMS`
 first to get the list of available versions, and then will fetch updates as
 needed.
 
