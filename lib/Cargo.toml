@@ -4,7 +4,7 @@
 [package]
 description = "sysext manager implementation"
 name = "sysexts-manager-lib"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/travier/sysexts-manager"
