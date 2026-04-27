@@ -14,7 +14,7 @@ rust-version = "1.85.0"
 [dependencies]
 sysexts-manager-lib = { version = "*", path = "../lib" }
 anyhow = "1.0.102"
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 env_logger = "0.11.10"
 log = "0.4.29"
-rayon = "1.11.0"
+rayon = "1.12.0"
