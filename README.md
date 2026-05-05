@@ -9,7 +9,7 @@ See the [demo for v0.3.0](https://asciinema.org/a/745601).
 Install the `sysexts-manager` pre-built sysext:
 
 ```bash
-VERSION="0.3.2" # sysexts-manager version
+VERSION="0.3.3" # sysexts-manager version
 VERSION_ID="44" # Fedora release
 ARCH="x86-64"   # or arm64
 URL="https://github.com/travier/sysexts-manager/releases/download/sysexts-manager/"
