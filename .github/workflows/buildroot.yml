@@ -39,14 +39,14 @@ concurrency:
 
 jobs:
   build-x86_64:
-    runs-on: ubuntu-24.04
+    runs-on: "ubuntu-24.04"
     steps:
-      - name: Checkout repo
+      - name: "Checkout repo"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
 
-      - name: Build container image
+      - name: "Build container image"
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
         with:
           context: .github
@@ -55,7 +55,7 @@ jobs:
           containerfiles: .github/Containerfile.buildroot
           oci: true
 
-      - name: Push to Container Registry
+      - name: "Push to Container Registry"
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -67,14 +67,14 @@ jobs:
           tags: latest-x86_64
 
   build-aarch64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: "ubuntu-24.04-arm"
     steps:
-      - name: Checkout repo
+      - name: "Checkout repo"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
 
-      - name: Build container image
+      - name: "Build container image"
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
         with:
           context: .github
@@ -83,7 +83,7 @@ jobs:
           containerfiles: .github/Containerfile.buildroot
           oci: true
 
-      - name: Push to Container Registry
+      - name: "Push to Container Registry"
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -95,12 +95,12 @@ jobs:
           tags: latest-aarch64
 
   merge:
-    runs-on: ubuntu-24.04
+    runs-on: "ubuntu-24.04"
     needs:
       - build-x86_64
       - build-aarch64
     steps:
-      - name: Create multi-arch manifest
+      - name: "Create multi-arch manifest"
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         shell: bash
         run: |
@@ -109,7 +109,7 @@ jobs:
             "${REGISTRY}/${NAME}:latest-x86_64" \
             "${REGISTRY}/${NAME}:latest-aarch64"
 
-      - name: Push to Container Registry
+      - name: "Push to Container Registry"
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
