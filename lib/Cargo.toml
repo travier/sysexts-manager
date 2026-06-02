@@ -13,7 +13,7 @@ rust-version = "1.85.0"
 [dependencies]
 anyhow = "1.0.102"
 cap-std = "4.0.2"
-log = "0.4.30"
+log = "0.4.31"
 os-release = "0.1.0"
 reqwest = { version = "0.13.4", features = ["blocking","native-tls"] }
 serde = { version = "1.0.228", features = ["derive"] }
