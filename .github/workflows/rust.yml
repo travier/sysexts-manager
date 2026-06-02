@@ -24,16 +24,18 @@ jobs:
   tests-stable:
     name: "Tests, stable toolchain"
     runs-on: "ubuntu-24.04"
-    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
       - name: "Cache build artifacts"
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: "cargo build"
         run: cargo build --all-targets
       - name: "cargo test"
@@ -41,16 +43,18 @@ jobs:
   tests-release-stable:
     name: "Tests (release), stable toolchain"
     runs-on: "ubuntu-24.04"
-    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
       - name: "Cache build artifacts"
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: "cargo build (release)"
         run: cargo build --all-targets --release
       - name: "cargo test (release)"
@@ -58,10 +62,12 @@ jobs:
   tests-release-msrv:
     name: "Tests (release), minimum supported toolchain"
     runs-on: "ubuntu-24.04"
-    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: "Detect crate MSRV"
         run: |
           msrv=$(cargo metadata --format-version 1 --no-deps | \
@@ -69,11 +75,11 @@ jobs:
           echo "Crate MSRV: $msrv"
           echo "MSRV=$msrv" >> $GITHUB_ENV
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: ${{ env.MSRV }}
       - name: "Cache build artifacts"
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: "cargo build (release)"
         run: cargo build --all-targets --release
       - name: "cargo test (release)"
@@ -81,17 +87,19 @@ jobs:
   linting:
     name: "Lints, pinned toolchain"
     runs-on: "ubuntu-24.04"
-    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: ${{ env.ACTIONS_LINTS_TOOLCHAIN }}
           components: rustfmt, clippy
       - name: "Cache build artifacts"
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: "cargo fmt (check)"
         run: cargo fmt -- --check -l
       - name: "cargo clippy (warnings)"
@@ -99,20 +107,22 @@ jobs:
   tests-other-channels:
     name: "Tests, unstable toolchain"
     runs-on: "ubuntu-24.04"
-    container: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+    container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     continue-on-error: true
     strategy:
       matrix:
         channel: [beta, nightly]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: ${{ matrix.channel }}
       - name: "Cache build artifacts"
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: "cargo build"
         run: cargo build --all-targets
       - name: "cargo test"

@@ -24,12 +24,9 @@ on:
     - cron:  '0 0 * * MON'
   workflow_dispatch:
 
-# Allow:
-# - Read access to the repo content
-# - Write access to packages to allow access to GitHub container registry
+# Allow read access to the repo content
 permissions:
   contents: read
-  packages: write
 
 # Prevent multiple workflow runs from racing to ensure that pushes are made
 # sequentialy for the main branch. Also cancel in progress workflow runs.
@@ -39,13 +36,18 @@ concurrency:
 
 jobs:
   build-x86_64:
-    runs-on: ubuntu-24.04
+    runs-on: "ubuntu-24.04"
+    # Allow write access to packages to allow access to GitHub container registry
+    permissions:
+      packages: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: "Checkout repo"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
-      - name: Build container image
-        uses: redhat-actions/buildah-build@v2
+      - name: "Build container image"
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
         with:
           context: .github
           image: ${{ env.NAME }}
@@ -53,8 +55,8 @@ jobs:
           containerfiles: .github/Containerfile.buildroot
           oci: true
 
-      - name: Push to Container Registry
-        uses: redhat-actions/push-to-registry@v2
+      - name: "Push to Container Registry"
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         with:
@@ -65,13 +67,18 @@ jobs:
           tags: latest-x86_64
 
   build-aarch64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: "ubuntu-24.04-arm"
+    # Allow write access to packages to allow access to GitHub container registry
+    permissions:
+      packages: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: "Checkout repo"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
-      - name: Build container image
-        uses: redhat-actions/buildah-build@v2
+      - name: "Build container image"
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
         with:
           context: .github
           image: ${{ env.NAME }}
@@ -79,8 +86,8 @@ jobs:
           containerfiles: .github/Containerfile.buildroot
           oci: true
 
-      - name: Push to Container Registry
-        uses: redhat-actions/push-to-registry@v2
+      - name: "Push to Container Registry"
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         with:
@@ -91,12 +98,15 @@ jobs:
           tags: latest-aarch64
 
   merge:
-    runs-on: ubuntu-24.04
+    runs-on: "ubuntu-24.04"
     needs:
       - build-x86_64
       - build-aarch64
+    # Allow write access to packages to allow access to GitHub container registry
+    permissions:
+      packages: write
     steps:
-      - name: Create multi-arch manifest
+      - name: "Create multi-arch manifest"
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         shell: bash
         run: |
@@ -105,8 +115,8 @@ jobs:
             "${REGISTRY}/${NAME}:latest-x86_64" \
             "${REGISTRY}/${NAME}:latest-aarch64"
 
-      - name: Push to Container Registry
-        uses: redhat-actions/push-to-registry@v2
+      - name: "Push to Container Registry"
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
         id: push
         if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         with:

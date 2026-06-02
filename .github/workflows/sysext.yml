@@ -15,9 +15,7 @@ on:
     tags:
       - "*"
 
-# Needed to allow creating a release
-permissions:
-  contents: write
+permissions: {}
 
 # Prevent multiple workflow runs from racing to ensure that pushes are made
 # sequentialy for the main branch. Also cancel in progress workflow runs.
@@ -33,13 +31,18 @@ jobs:
         release: ['42', '43', '44']
     runs-on: "ubuntu-24.04"
     container:
-      image: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+      image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
       options: "--privileged --security-opt label=disable --user 0:0"
     env:
       IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
+    # Allow write access to enable creating a release
+    permissions:
+      contents: write
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: "Mark directory as safe"
         run: |
@@ -65,13 +68,18 @@ jobs:
         release: ['42', '43', '44']
     runs-on: "ubuntu-24.04-arm"
     container:
-      image: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+      image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
       options: "--privileged --security-opt label=disable --user 0:0"
     env:
       IMAGE: "quay.io/fedora-ostree-desktops/base-atomic:${{ matrix.release }}"
+    # Allow write access to enable creating a release
+    permissions:
+      contents: write
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: "Mark directory as safe"
         run: |
@@ -93,15 +101,20 @@ jobs:
   publish-latest:
     runs-on: "ubuntu-24.04"
     container:
-      image: "ghcr.io/travier/sysexts-manager/buildroot:latest"
+      image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     # Run after both arch builds
     needs:
       - build-x86_64
       - build-aarch64
+    # Allow write access to enable creating a release
+    permissions:
+      contents: write
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: "Mark directory as safe"
         run: |
