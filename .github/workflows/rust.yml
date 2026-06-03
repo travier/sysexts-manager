@@ -27,7 +27,7 @@ jobs:
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: "Install toolchain"
@@ -46,7 +46,7 @@ jobs:
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: "Install toolchain"
@@ -65,7 +65,7 @@ jobs:
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: "Detect crate MSRV"
@@ -90,7 +90,7 @@ jobs:
     container: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: "Install toolchain"
@@ -114,7 +114,7 @@ jobs:
         channel: [beta, nightly]
     steps:
       - name: "Check out repository"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: "Install toolchain"
