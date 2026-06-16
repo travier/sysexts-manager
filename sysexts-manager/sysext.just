@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: MIT
 
 # Do no use this justfile directly. See sub-directories.
 
@@ -7,8 +7,12 @@
 set allow-duplicate-variables := true
 set allow-duplicate-recipes := true
 
-# sysexts must explicitely say which base operating system images they target
-base_images := ""
+# Default to base-atomic images for x86_64 & aarch64 for the current branched,
+# stable and old stable Fedora releases. Can be override on a per sysext basis.
+base_images := "
+quay.io/fedora-ostree-desktops/base-atomic:43 x86_64,aarch64
+quay.io/fedora-ostree-desktops/base-atomic:44 x86_64,aarch64
+"
 
 # Default to building for the current architecture
 arch := arch()
@@ -59,12 +63,16 @@ upholds := ""
 # compression := "zstd"
 compression := "lz4"
 
-# print more logs to help debugging. Enable by setting JUST_DEBUG env variable.
-# Defaut to false.
+# Print more logs to help debugging. Enable by setting JUST_DEBUG env variable.
+# Default to false.
 debug := env('JUST_DEBUG', '')
 
+# Set JUST_PODMAN_EXTRA_OPTS to pass extra opts to podman commands.
+# Use '--pull=never' for example to disable image update checks and pulls
+podman_extra_opts := env('JUST_PODMAN_EXTRA_OPTS', '')
+
 # Default podman options
-podman_opts := "--rm --arch=" + arch + " --security-opt label=disable"
+podman_opts := "--rm --arch=" + arch + " --security-opt label=disable --env LC_ALL=en_US.UTF-8" + podman_extra_opts
 
 # Default, empty, just recipe
 default:
@@ -248,7 +256,9 @@ download-rpms target arch=arch:
 
     packages="$(echo "{{packages}}" | xargs)"
 
-    pre_commands=""
+    # Always disable the openh264 repo by default
+    pre_commands="dnf5 config-manager setopt fedora-cisco-openh264.enabled=0; "
+
     if [[ -n "{{pre_commands}}" ]]; then
         pre_commands+="{{pre_commands}} ; "
     fi
@@ -261,7 +271,8 @@ download-rpms target arch=arch:
     fi
     if [[ -n "{{external_repos}}" ]]; then
         pre_commands+="dnf install -y dnf5-plugins"
-        for r in "{{external_repos}}"; do
+        external_repos="$(echo "{{external_repos}}" | xargs)"
+        for r in ${external_repos}; do
             pre_commands+=" ; dnf config-manager addrepo --from-repofile=${r}"
         done
         pre_commands+=" ; "
@@ -292,7 +303,7 @@ download-rpms target arch=arch:
         --volume "${PWD}/../../.dnf-cache:/var/cache/libdnf5" \
         --workdir "/var/srv" \
         "{{target}}" \
-        bash -xc "export FORCE_COLUMNS=100 && ${pre_commands}dnf download --resolve ${dnf_arch} ${dnf_opts} ${disablerepos} ${enablerepos} ${packages}"
+        bash -xc "${pre_commands}dnf download --resolve ${dnf_arch} ${dnf_opts} ${disablerepos} ${enablerepos} ${packages}"
 
 # Manual download step, that can be overridden to dowload non RPM content
 download-manual arch=arch:
@@ -498,7 +509,9 @@ install-rpms:
     echo "📦 Extracting packages:"
     for rpm in ../rpms/*.rpm; do
         echo "$(basename ${rpm})"
-        rpm2cpio "${rpm}" | ${SUDO} cpio -idmv &> /dev/null
+        rpm2cpio "${rpm}" > ${rpm}.tar
+        ${SUDO} cpio -idmv &> /dev/null < ${rpm}.tar
+        rm ${rpm}.tar
     done
 
 # Install files from the current directory. Uses:
@@ -560,7 +573,12 @@ move-etc:
         ${SUDO} mv --no-clobber --no-copy ./etc ./usr/etc
     fi
 
-# Validation pass that checks for common errors
+# Validation pass that checks for common errors and will also try to fix some
+# common cases:
+# - Cleanup files as requested in the justfile
+# - Remove all empty directories in /var, /run and /opt
+# - Merge the content of /usr/sbin with /usr/bin (since Fedora 42)
+# - Run the checks
 validate:
     #!/bin/bash
     set -euo pipefail
@@ -598,10 +616,27 @@ validate:
         fi
     done
 
-    # Check sbin/bin merge starting with Fedora 42
-    if [[ "${version_id}" -ge 42 ]] && [[ -d "usr/sbin" ]]; then
+    # Try to merge /lib64 with /usr/lib64
+    if [[ -d "lib64" ]]; then
+        echo "➡️ Moving /lib64 to /usr/lib64"
+        if [[ ! -d "usr/lib64" ]]; then
+            install -dm 0755 ./usr/lib64
+        fi
+        ${SUDO} mv --verbose --no-clobber ./lib64/* ./usr/lib64
+        ${SUDO} rmdir lib64
+    fi
+
+    # Try to merge /usr/sbin with /usr/bin (since Fedora 42)
+    if [[ -d "usr/sbin" ]]; then
+        echo "➡️ Moving /usr/sbin to /usr/bin"
+        ${SUDO} mv --verbose --no-clobber ./usr/sbin/* ./usr/bin
+        ${SUDO} rmdir usr/sbin
+    fi
+
+    # Check bin/sbin merge (since Fedora 42)
+    if [[ -d "usr/sbin" ]]; then
         failed_checks=$((failed_checks+1))
-        echo "❌ Found /usr/sbin directory on Fedora 42+ sysext (see bin/sbin merge change)"
+        echo "❌ Found /usr/sbin directory (see bin/sbin merge change)"
         ls -alh usr/sbin
     fi
 
@@ -655,6 +690,9 @@ reset-selinux-labels target arch=arch:
     # module in the sysext and might thus need specific labels
     pre_commands=""
     if [[ -d "./rootfs/usr/share/selinux/packages" ]]; then
+        # Always disable the openh264 repo by default
+        pre_commands="dnf5 config-manager setopt fedora-cisco-openh264.enabled=0; "
+
         dnf_opts=""
         if [[ "{{dnf_weak_deps}}" == false ]]; then
             dnf_opts="--setopt=install_weak_deps=False"
@@ -680,7 +718,7 @@ reset-selinux-labels target arch=arch:
         fi
 
         if [[ -n "{{packages}}" ]]; then
-            pre_commands+="export FORCE_COLUMNS=100 && dnf install -y ${dnf_opts} ${disablerepos} ./rpms/* && "
+            pre_commands+="dnf install -y ${dnf_opts} ${disablerepos} ./rpms/* && "
         fi
 
         mkdir -p ../.dnf-cache
