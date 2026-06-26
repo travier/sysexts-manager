@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: ['42', '43', '44']
+        release: ['43', '44']
     runs-on: "ubuntu-24.04"
     container:
       image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
