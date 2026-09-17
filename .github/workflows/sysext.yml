@@ -56,7 +56,7 @@ jobs:
           cp target/release/sysexts-manager sysexts-manager/usr/bin/sysexts-manager
 
       - name: "Build sysext: sysexts-manager"
-        uses: ./.github/actions/build
+        uses: $/.github/actions/build
         with:
           sysext: 'sysexts-manager'
           image: ${{ env.IMAGE }}
@@ -93,7 +93,7 @@ jobs:
           cp target/release/sysexts-manager sysexts-manager/usr/bin/sysexts-manager
 
       - name: "Build sysext: sysexts-manager"
-        uses: ./.github/actions/build
+        uses: $/.github/actions/build
         with:
           sysext: 'sysexts-manager'
           image: ${{ env.IMAGE }}
@@ -122,6 +122,6 @@ jobs:
           git fetch --no-tags --prune --depth=1 origin +refs/heads/main:refs/remotes/origin/main
 
       - name: "Gather all sysexts releases"
-        uses: ./.github/actions/gather
+        uses: $/.github/actions/gather
         with:
           sysexts: 'sysexts-manager'
