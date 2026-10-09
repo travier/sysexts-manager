@@ -3,8 +3,8 @@
 # SPDX-FileCopyrightText: Timothée Ravier <tim@siosm.fr>
 # SPDX-License-Identifier: CC0-1.0
 
-old_version="0.3.2"
-new_version="0.3.3"
+old_version="0.3.3"
+new_version="0.3.4"
 
 sed -i "s/version = \"${old_version}\"/version = \"${new_version}\"/" \
     cli/Cargo.toml lib/Cargo.toml
