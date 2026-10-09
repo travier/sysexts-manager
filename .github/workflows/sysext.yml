@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: ['43', '44']
+        release: ['43', '44', '45']
     runs-on: "ubuntu-26.04"
     container:
       image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: ['43', '44']
+        release: ['43', '44', '45']
     runs-on: "ubuntu-26.04-arm"
     container:
       image: "ghcr.io/travier/sysexts-manager/buildroot:latest" # zizmor: ignore[unpinned-images]
