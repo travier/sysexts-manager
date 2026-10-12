@@ -114,6 +114,7 @@ jobs:
           buildah manifest create "${REGISTRY}/${NAME}:latest" \
             "${REGISTRY}/${NAME}:latest-x86_64" \
             "${REGISTRY}/${NAME}:latest-aarch64"
+          buildah tag "${REGISTRY}/${NAME}:latest" "${NAME}:latest"
 
       - name: "Push to Container Registry"
         uses: redhat-actions/push-to-registry@94ade333c38ecc0e60e94785125d9a52ca423b37 # v3.0.0
