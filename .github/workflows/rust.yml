@@ -31,7 +31,7 @@ jobs:
         with:
           persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
       - name: "Cache build artifacts"
@@ -50,7 +50,7 @@ jobs:
         with:
           persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
       - name: "Cache build artifacts"
@@ -75,7 +75,7 @@ jobs:
           echo "Crate MSRV: $msrv"
           echo "MSRV=$msrv" >> $GITHUB_ENV
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: ${{ env.MSRV }}
       - name: "Cache build artifacts"
@@ -94,7 +94,7 @@ jobs:
         with:
           persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: ${{ env.ACTIONS_LINTS_TOOLCHAIN }}
           components: rustfmt, clippy
@@ -118,7 +118,7 @@ jobs:
         with:
           persist-credentials: false
       - name: "Install toolchain"
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: ${{ matrix.channel }}
       - name: "Cache build artifacts"
