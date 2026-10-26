@@ -1682,6 +1682,7 @@ dependencies = [
  "log",
  "rayon",
  "sysexts-manager-lib",
+ "tempfile",
 ]
 
 [[package]]
