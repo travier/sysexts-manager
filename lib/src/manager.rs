@@ -3,9 +3,9 @@
 
 use std::collections::HashMap;
 use std::env::consts::ARCH;
-use std::fs::{self, File, remove_file, rename, symlink_metadata};
+use std::fs::{self, File, remove_file, symlink_metadata};
 use std::io::Write;
-use std::os::unix::fs::symlink;
+use std::os::unix::fs::{PermissionsExt, symlink};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow};
@@ -138,15 +138,14 @@ impl Manager {
                 continue;
             };
             debug!("Looking at sysext image: {}", filename.path().display());
+            let filename_osstr = filename.file_name();
+            let filename_str = filename_osstr.to_str().unwrap();
+            if filename_str.ends_with(".tmp") {
+                debug!("Ignoring temporary file: {filename_str}");
+                continue;
+            }
             let mut found = false;
             for name in self.configs.keys() {
-                let filename_osstr = filename.file_name();
-                let filename_str = filename_osstr.to_str().unwrap();
-                if filename_str.ends_with(".tmp") {
-                    debug!("Cleaning up temporary file: {filename_str}");
-                    remove_file(self.rootdir.join(DEFAULT_STORE).join(filename_osstr))?;
-                    continue;
-                }
                 if filename_str.starts_with(name) {
                     found = true;
                     let Ok(image) = Image::new(name, filename.file_name(), None) else {
@@ -522,19 +521,20 @@ impl Manager {
         debug!("Downloading: {image_url}");
         let mut response = client.get(image_url).send()?;
 
-        // Setup a temporary file
+        // Each download owns its temporary file, including cleanup on failure.
         let sysext_store = self.rootdir.join(DEFAULT_STORE);
-        let sysext_tmp = sysext_store.join(format!("{}.tmp", download_image.path()));
-        let file = File::create(&sysext_tmp)?;
+        let mut file = tempfile::Builder::new()
+            .prefix(&format!("{}.", download_image.path()))
+            .suffix(".tmp")
+            .permissions(fs::Permissions::from_mode(0o666))
+            .tempfile_in(&sysext_store)?;
 
         // Create a writer to compute sha256sum hash as we download the image to the temporary file
-        let mut writer = Sha256Writer::new(file);
+        let mut writer = Sha256Writer::new(file.as_file_mut());
         response.copy_to(&mut writer)?;
 
         let digest = writer.digest();
         if digest != download_image.hash.clone().unwrap_or("?".into()) {
-            debug!("Invalid hash, removing file: {}", sysext_tmp.display());
-            remove_file(sysext_tmp)?;
             return Err(anyhow!(
                 "Invalid hash for {}: got {} vs expected {}",
                 download_image.path(),
@@ -552,10 +552,15 @@ impl Manager {
         let sysext_final = sysext_store.join(download_image.path());
         debug!(
             "Renaming: {} -> {}",
-            sysext_tmp.display(),
+            file.path().display(),
             sysext_final.display()
         );
-        rename(sysext_tmp, &sysext_final)?;
+        let rename_context = format!(
+            "Failed to rename {} to {}",
+            file.path().display(),
+            sysext_final.display()
+        );
+        file.persist(&sysext_final).context(rename_context)?;
         println!("Successfully updated sysext: {}", config.Name);
 
         // TODO: Add image to manager
@@ -576,12 +581,24 @@ impl Manager {
         }
 
         let empty: Vec<Image> = vec![];
-        self.configs.clone().into_par_iter().for_each(|(n, c)| {
-            let images = self.images.get(&n).unwrap_or(&empty);
-            self.update_sysext(&c, images).unwrap_or_else(|e| {
-                error!("Failed to update sysext: {n}: {e}");
-            });
-        });
+        let mut failures: Vec<String> = self
+            .configs
+            .par_iter()
+            .filter_map(|(n, c)| {
+                let images = self.images.get(n).unwrap_or(&empty);
+                self.update_sysext(c, images).err().map(|e| {
+                    error!("Failed to update sysext: {n}: {e:#}");
+                    format!("{n}: {e:#}")
+                })
+            })
+            .collect();
+        if !failures.is_empty() {
+            failures.sort();
+            return Err(anyhow!(
+                "Failed to update sysexts:\n{}",
+                failures.join("\n")
+            ));
+        }
 
         println!("Successfully updated all sysexts");
         Ok(())
